@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { getUserRoles, ROLES } from "@/lib/discord";
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://phoenixrp.online";
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   if (!code) {
-    return NextResponse.redirect(new URL("/?error=no_code", req.url));
+    return NextResponse.redirect(new URL("/?error=no_code", SITE_URL));
   }
 
   try {
@@ -26,7 +28,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tokenRes.ok) {
-      return NextResponse.redirect(new URL("/?error=token_exchange_failed", req.url));
+      return NextResponse.redirect(new URL("/?error=token_exchange_failed", SITE_URL));
     }
 
     const { access_token } = await tokenRes.json();
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!userRes.ok) {
-      return NextResponse.redirect(new URL("/?error=user_fetch_failed", req.url));
+      return NextResponse.redirect(new URL("/?error=user_fetch_failed", SITE_URL));
     }
 
     const user = await userRes.json();
@@ -67,9 +69,9 @@ export async function GET(req: NextRequest) {
 
     await setSessionCookie(token);
 
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", SITE_URL));
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(new URL("/?error=internal", req.url));
+    return NextResponse.redirect(new URL("/?error=internal", SITE_URL));
   }
 }
