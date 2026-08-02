@@ -1,3 +1,16 @@
+const { execSync } = require("child_process");
+
+const cloudflaredPath = (() => {
+  try {
+    const out = execSync("where cloudflared", { shell: "cmd.exe" })
+      .toString()
+      .trim()
+      .split(/\r?\n/)[0];
+    if (out) return out;
+  } catch {}
+  return "cloudflared";
+})();
+
 module.exports = {
   apps: [
     {
@@ -22,7 +35,7 @@ module.exports = {
     },
     {
       name: "tunnel",
-      script: "cloudflared",
+      script: cloudflaredPath,
       args: "tunnel run phoenix-site",
       cwd: __dirname,
       restart_delay: 3000,
