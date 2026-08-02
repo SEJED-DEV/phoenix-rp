@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify, SignJWT } from "jose";
+import { getSiteUrl } from "@/lib/site-url";
 
 const SECRET = new TextEncoder().encode(process.env.SESSION_SECRET || "fallback-secret");
 const COOKIE_NAME = "phoenix_session";
@@ -50,7 +51,7 @@ export async function proxy(req: NextRequest) {
     if (req.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", getSiteUrl()));
   }
 
   try {
@@ -68,7 +69,7 @@ export async function proxy(req: NextRequest) {
       if (req.nextUrl.pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/", getSiteUrl()));
     }
 
     const isManagement = roles.some((r) => MANAGEMENT_ROLES.includes(r));
@@ -103,6 +104,6 @@ export async function proxy(req: NextRequest) {
     if (req.nextUrl.pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Invalid session" }, { status: 401 });
     }
-    return NextResponse.redirect(new URL("/", req.url));
+    return NextResponse.redirect(new URL("/", getSiteUrl()));
   }
 }

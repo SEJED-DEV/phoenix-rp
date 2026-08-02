@@ -3,6 +3,7 @@ import { APPLICATION_SLUGS } from "@/lib/apply.config";
 import { getApplicationById, updateApplication } from "@/lib/applications.db";
 import { logStaffAction } from "@/lib/activity-log";
 import { notifyApplicationResult } from "@/lib/application-notify";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ dept: string; id: string }> }) {
   const roleLevel = req.headers.get("x-role-level");
@@ -89,7 +90,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
       reviewerId: actorId,
       reviewerName: actorName,
     },
-    req.nextUrl.origin,
+    getSiteUrl(),
   );
 
   return NextResponse.json({ success: true });

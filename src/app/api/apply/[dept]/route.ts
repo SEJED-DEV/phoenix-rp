@@ -4,6 +4,7 @@ import { getApplyConfig } from "@/lib/apply.config";
 import { createApplication, hasPendingApplication } from "@/lib/applications.db";
 import { APPLICATION_DEPARTMENTS, STAFF_APPLICATIONS } from "@/lib/applications.data";
 import { notifyNewApplication } from "@/lib/application-notify";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ dept: string }> }) {
   const session = await ensureSessionRoles();
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ dep
   const id = createApplication(dept, session.userId, session.username, body);
   await notifyNewApplication(
     { dept, id, userId: session.userId, username: session.username },
-    req.nextUrl.origin,
+    getSiteUrl(),
   );
   return NextResponse.json({ success: true, id }, { status: 201 });
 }

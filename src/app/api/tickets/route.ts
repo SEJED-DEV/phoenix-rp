@@ -4,6 +4,7 @@ import { createTicket, getTicketsByUser, getAllTickets, hasOpenTicketOfType } fr
 import { getTicketType } from "@/lib/tickets.config";
 import { sendTicketNotification } from "@/lib/tickets.webhook";
 import { getHighestRole } from "@/lib/discord";
+import { getSiteUrl } from "@/lib/site-url";
 
 export async function GET(_req: NextRequest) {
   const session = await ensureSessionRoles();
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
     userRole: getHighestRole(session.roles) || undefined,
   });
 
-  const ticketUrl = `${req.nextUrl.origin}/tickets?id=${ticket.id}`;
+  const ticketUrl = `${getSiteUrl()}/tickets?id=${ticket.id}`;
 
   sendTicketNotification(ticket, ticketUrl);
 

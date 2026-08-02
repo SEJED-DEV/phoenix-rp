@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { getUserRoles, ROLES } from "@/lib/discord";
+import { getSiteUrl } from "@/lib/site-url";
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://phoenixrp.online";
+const SITE_URL = getSiteUrl();
 
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
