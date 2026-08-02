@@ -21,7 +21,6 @@ const dmSans = DM_Sans({
 export const metadata: Metadata = {
   title: "Tunisian Phoenix RP",
   description: "A Tunisian FiveM Roleplay Community — Born from fire, built by the community.",
-  icons: { icon: "/favicon.ico" },
   openGraph: {
     title: "Tunisian Phoenix RP",
     description: "A Tunisian FiveM Roleplay Community — Born from fire, built by the community.",
