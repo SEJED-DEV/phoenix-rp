@@ -20,5 +20,13 @@ module.exports = {
       restart_delay: 3000,
       max_restarts: 10,
     },
+    {
+      name: "tunnel",
+      script: "cloudflared",
+      args: "tunnel run phoenix-site",
+      cwd: __dirname,
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
   ],
 };
