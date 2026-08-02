@@ -1,8 +1,7 @@
 export function getDiscordLoginUrl(): string {
-  const origin = typeof window !== "undefined" ? window.location.origin : "";
-  const redirectUri = origin
-    ? `${origin}/api/auth/callback`
-    : process.env.DISCORD_REDIRECT_URI || "https://phoenixrp.online/api/auth/callback";
+  const redirectUri =
+    process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI ||
+    "https://phoenixrp.online/api/auth/callback";
 
   const clientId = typeof window !== "undefined"
     ? "1525591574505853069"

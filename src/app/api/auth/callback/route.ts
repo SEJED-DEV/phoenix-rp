@@ -9,7 +9,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const redirectUri = `${req.nextUrl.origin}/api/auth/callback`;
+    const redirectUri =
+      process.env.DISCORD_REDIRECT_URI || "https://phoenixrp.online/api/auth/callback";
 
     // Exchange code for access token
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
