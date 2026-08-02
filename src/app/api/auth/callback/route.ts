@@ -9,6 +9,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const redirectUri = `${req.nextUrl.origin}/api/auth/callback`;
+
     // Exchange code for access token
     const tokenRes = await fetch("https://discord.com/api/oauth2/token", {
       method: "POST",
@@ -18,7 +20,7 @@ export async function GET(req: NextRequest) {
         client_secret: process.env.DISCORD_CLIENT_SECRET!,
         grant_type: "authorization_code",
         code,
-        redirect_uri: process.env.DISCORD_REDIRECT_URI!,
+        redirect_uri: redirectUri,
       }),
     });
 
