@@ -53,25 +53,35 @@ export async function clearSession() {
 }
 
 /**
- * Returns the session, fetching roles from Discord and re-issuing the
- * cookie if they are missing. Call this from API routes that need to
- * know the user's real roles (tickets, etc.) so we are never blind
- * to a stale/empty session.
+ * Returns the session with live roles fetched from Discord, re-issuing the
+ * cookie if the roles changed. Falls back to the cached roles if Discord
+ * errors so the site keeps working during rate limits or outages.
  */
-export async function ensureSessionRoles(): Promise<SessionData | null> {
+export async function getFreshSession(): Promise<SessionData | null> {
   const session = await getSession();
   if (!session) return null;
 
-  if (session.roles && session.roles.length > 0) return session;
+  try {
+    const { getUserRoles } = await import("./discord");
+    const { ROLES } = await import("./discord");
+    const roles = await getUserRoles(session.userId);
+    const isStaff = roles.includes(ROLES.STAFF);
 
-  // Roles empty — fetch from Discord and persist
-  const { getUserRoles } = await import("./discord");
-  const { ROLES } = await import("./discord");
-  const roles = await getUserRoles(session.userId);
-  const isStaff = roles.includes(ROLES.STAFF);
+    const updatedToken = await createSession({ ...session, roles, isStaff });
+    await setSessionCookie(updatedToken);
 
-  const updatedToken = await createSession({ ...session, roles, isStaff });
-  await setSessionCookie(updatedToken);
+    return { ...session, roles, isStaff };
+  } catch (error) {
+    console.error("[auth] Live role fetch failed, using cached roles:", error);
+    return session;
+  }
+}
 
-  return { ...session, roles, isStaff };
+/**
+ * Returns the session, fetching live roles from Discord and re-issuing the
+ * cookie if they are missing. Call this from API routes that need to know the
+ * user's real roles (tickets, etc.) so we are never blind to a stale session.
+ */
+export async function ensureSessionRoles(): Promise<SessionData | null> {
+  return getFreshSession();
 }

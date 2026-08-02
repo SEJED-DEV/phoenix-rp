@@ -43,6 +43,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchStatus();
   }, [fetchStatus]);
 
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") fetchStatus();
+    };
+    const onFocus = () => fetchStatus();
+    window.addEventListener("focus", onFocus);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onFocus);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [fetchStatus]);
+
   return (
     <AuthContext.Provider value={{ status, loading, refresh: fetchStatus }}>
       {children}
