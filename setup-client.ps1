@@ -6,7 +6,8 @@
 #   2. powershell -ExecutionPolicy Bypass -File setup-client.ps1
 #
 # Optional: pass the private repo URL to also clone + build + start the app:
-#   powershell -ExecutionPolicy Bypass -File setup-client.ps1 -RepoUrl "https://github.com/USER/phoenix-site.git"
+#   powershell -ExecutionPolicy Bypass -File setup-client.ps1 -RepoUrl "https://github.com/SEJED-DEV/phoenix-rp.git"
+# NOTE: if gh auth login opens a browser, complete it - the clone of a private repo needs it.
 
 param(
     [string]$RepoUrl = "",
@@ -48,6 +49,23 @@ if (Get-Command cloudflared -ErrorAction SilentlyContinue) {
     winget install --id Cloudflare.cloudflared -e --accept-source-agreements --accept-package-agreements
     Refresh-Path
 }
+
+Write-Step "Installing GitHub CLI"
+if (Get-Command gh -ErrorAction SilentlyContinue) {
+    Write-Host "gh already installed: $(gh --version | Select-Object -First 1)" -ForegroundColor Green
+} else {
+    winget install --id GitHub.cli -e --accept-source-agreements --accept-package-agreements
+    Refresh-Path
+}
+
+Write-Step "GitHub sign-in"
+Refresh-Path
+if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+    Write-Host "gh not on PATH. Close and reopen PowerShell as admin, then re-run." -ForegroundColor Red
+    exit 1
+}
+gh auth login --hostname github.com --git-protocol https --web --skip-ssh-key
+gh auth setup-git
 
 Write-Step "Verifying Node + npm"
 Refresh-Path
