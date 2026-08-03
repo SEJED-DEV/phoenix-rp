@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
-import { getAvailableTicketTypes, TICKET_TYPES, ROLE_IDS } from "@/lib/tickets.config";
+import { TICKET_TYPES, type TicketType } from "@/lib/tickets.config";
 import TicketForm from "@/components/TicketForm";
 import TicketList, { type Ticket } from "@/components/TicketList";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
@@ -15,6 +15,9 @@ export default function TicketsPage() {
   const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [discordUrl, setDiscordUrl] = useState("#");
+  const [availableTypes, setAvailableTypes] = useState<TicketType[]>(
+    TICKET_TYPES.filter((t) => t.openRoles.length === 0)
+  );
 
   useEffect(() => {
     setDiscordUrl(getDiscordLoginUrl());
@@ -27,6 +30,7 @@ export default function TicketsPage() {
         const data = await res.json();
         setTickets(data.tickets || []);
         setIsStaff(data.isStaff || false);
+        if (data.availableTypes) setAvailableTypes(data.availableTypes);
       }
     } catch {
       console.error("Failed to fetch tickets");
@@ -97,13 +101,6 @@ export default function TicketsPage() {
     );
   }
 
-  const userRoles: string[] = [];
-  if ("isStaff" in status && status.isStaff) userRoles.push(ROLE_IDS.STAFF);
-  if (status.state === "whitelisted") userRoles.push(ROLE_IDS.WHITELISTED);
-  if (status.state === "needs_checkin") userRoles.push(ROLE_IDS.CHECKIN);
-
-  const availableTypes = getAvailableTicketTypes(userRoles);
-
   const stats = {
     open: tickets.filter((t) => t.status === "open").length,
     inProgress: tickets.filter((t) => t.status === "in-progress").length,
@@ -171,7 +168,7 @@ export default function TicketsPage() {
 
       {showForm && (
         <TicketForm
-          availableTypes={availableTypes.length > 0 ? availableTypes : TICKET_TYPES.filter((t) => t.openRoles.length === 0)}
+          availableTypes={availableTypes}
           openTicketTypes={tickets.filter((t) => t.status === "open" || t.status === "in-progress").map((t) => t.type)}
           onSuccess={refreshAndClose}
           onCancel={() => setShowForm(false)}
