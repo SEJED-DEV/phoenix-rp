@@ -6,6 +6,7 @@ import { useParams } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { getDepartment, APPLICATION_DEPARTMENTS } from "@/lib/applications.data";
+import PageSkeleton from "@/components/PageSkeleton";
 
 const DISCORD_INVITE = "https://discord.gg/rapZCCQBv";
 
@@ -44,11 +45,7 @@ export default function DeptApplyPage() {
   }, [loading]);
 
   if (loading) {
-    return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
-      </section>
-    );
+    return <PageSkeleton />;
   }
 
   if (!dept) {

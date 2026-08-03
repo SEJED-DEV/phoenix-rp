@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { getApplicationLabels } from "@/lib/applications.data";
+import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 interface Application {
   id: number;
@@ -153,8 +154,21 @@ export default function ApplicationReview() {
         {/* Application list */}
         <div className="lg:col-span-2">
           {loading ? (
-            <div className="flex justify-center py-20">
-              <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
+            <div className="space-y-2">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <SkeletonCard key={i} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-24" />
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                      <Skeleton className="h-3 w-10" />
+                    </div>
+                  </div>
+                </SkeletonCard>
+              ))}
             </div>
           ) : !data || data.applications.length === 0 ? (
             <div className="text-center py-20">

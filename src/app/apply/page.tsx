@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { APPLICATION_DEPARTMENTS, type ApplicationDepartment } from "@/lib/applications.data";
+import { Skeleton } from "@/components/Skeleton";
 
 function DeptCard({ dept, index }: { dept: ApplicationDepartment; index: number }) {
   const [displayImage, setDisplayImage] = useState(dept.image);
@@ -52,8 +53,17 @@ export default function ApplyPage() {
 
   if (loading) {
     return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
+      <section className="relative min-h-screen overflow-hidden px-6 sm:px-8 py-20 sm:py-28">
+        <div className="max-w-6xl mx-auto">
+          <Skeleton className="h-4 w-16 mb-12" />
+          <Skeleton className="h-12 sm:h-16 w-72 sm:w-96 mb-4" />
+          <Skeleton className="h-5 w-full max-w-xl mb-12" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <Skeleton className="aspect-[16/9] rounded-2xl" />
+            <Skeleton className="aspect-[16/9] rounded-2xl" />
+            <Skeleton className="aspect-[16/9] rounded-2xl" />
+          </div>
+        </div>
       </section>
     );
   }

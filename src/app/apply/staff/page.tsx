@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { STAFF_APPLICATIONS } from "@/lib/applications.data";
+import PageSkeleton from "@/components/PageSkeleton";
 
 const STAFF_IMAGES = [
   "/media/ChatGPT_Image_22_juin_2026_02_02_52.png",
@@ -40,11 +41,7 @@ export default function StaffApplyPage() {
   }, [loading]);
 
   if (loading) {
-    return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
-      </section>
-    );
+    return <PageSkeleton />;
   }
 
   if (status.state === "logged_out") {

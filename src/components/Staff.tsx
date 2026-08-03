@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { getProfileRoles, PROFILE_ROLES } from "@/lib/profile-roles.config";
+import { Skeleton, SkeletonCircle, SkeletonCard } from "@/components/Skeleton";
 
 interface StaffMember {
   userId: string;
@@ -175,8 +176,16 @@ export default function Staff() {
         </div>
 
         {loading ? (
-          <div className="flex justify-center py-20">
-            <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <SkeletonCard key={i} className="p-6">
+                <div className="flex flex-col items-center gap-3">
+                  <SkeletonCircle className="w-16 h-16" />
+                  <Skeleton className="h-4 w-24" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </SkeletonCard>
+            ))}
           </div>
         ) : members.length === 0 ? (
           <div className="text-center py-20">

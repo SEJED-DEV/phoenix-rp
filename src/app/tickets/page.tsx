@@ -6,6 +6,7 @@ import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { getAvailableTicketTypes, TICKET_TYPES, ROLE_IDS } from "@/lib/tickets.config";
 import TicketForm from "@/components/TicketForm";
 import TicketList, { type Ticket } from "@/components/TicketList";
+import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 export default function TicketsPage() {
   const { status, loading } = useAuth();
@@ -56,8 +57,28 @@ export default function TicketsPage() {
 
   if (loading || fetching) {
     return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
+      <section className="relative min-h-screen px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+              <Skeleton className="h-14 sm:h-16 w-56 mb-3" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <Skeleton className="h-11 w-32 rounded-xl" />
+          </div>
+          <div className="grid grid-cols-4 gap-2 mb-6">
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+            <Skeleton className="h-16 rounded-lg" />
+          </div>
+          <div className="space-y-3">
+            <SkeletonCard className="p-5"><Skeleton className="h-4 w-24" /></SkeletonCard>
+            <SkeletonCard className="p-5"><Skeleton className="h-4 w-32" /></SkeletonCard>
+            <SkeletonCard className="p-5"><Skeleton className="h-4 w-28" /></SkeletonCard>
+            <SkeletonCard className="p-5"><Skeleton className="h-4 w-36" /></SkeletonCard>
+          </div>
+        </div>
       </section>
     );
   }

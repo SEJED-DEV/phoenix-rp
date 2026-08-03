@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import FireParticles from "@/components/FireParticles";
+import { Skeleton, SkeletonCircle, SkeletonCard } from "@/components/Skeleton";
 
 interface ProfileData {
   username: string;
@@ -56,9 +57,34 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <section className="h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
-      </section>
+      <div className="min-h-screen bg-[#050507]">
+        <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-24" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
+          <Skeleton className="h-4 w-16 mb-8" />
+          <SkeletonCard className="p-6 sm:p-8 mb-6">
+            <div className="flex flex-col sm:flex-row items-center gap-5">
+              <SkeletonCircle className="w-24 h-24" />
+              <div className="text-center sm:text-left space-y-2">
+                <Skeleton className="h-7 w-40" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+            </div>
+          </SkeletonCard>
+          <Skeleton className="h-3 w-28 mb-3" />
+          <div className="flex flex-wrap gap-2 mb-6">
+            <Skeleton className="h-7 w-24 rounded-lg" />
+            <Skeleton className="h-7 w-28 rounded-lg" />
+            <Skeleton className="h-7 w-20 rounded-lg" />
+          </div>
+          <Skeleton className="h-3 w-24 mb-3" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+            <Skeleton className="h-20 rounded-xl" />
+          </div>
+        </div>
+      </div>
     );
   }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
+import PageSkeleton from "@/components/PageSkeleton";
 
 export default function AppealPage() {
   const { status, loading } = useAuth();
@@ -21,11 +22,7 @@ export default function AppealPage() {
   }, []);
 
   if (loading) {
-    return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
-      </section>
-    );
+    return <PageSkeleton />;
   }
 
   if (status.state === "logged_out") {

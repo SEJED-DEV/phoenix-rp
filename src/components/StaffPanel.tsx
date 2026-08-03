@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Skeleton, SkeletonCard, SkeletonCircle } from "@/components/Skeleton";
 
 interface DashboardData {
   totalMembers: number;
@@ -93,8 +94,42 @@ export default function StaffPanel() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-40">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
+      <div className="max-w-6xl mx-auto px-6 py-12">
+        <div className="flex items-center gap-3 mb-12">
+          <Skeleton className="w-10 h-10 rounded-xl" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-3 w-64" />
+          </div>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+          <Skeleton className="h-28 rounded-2xl" />
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-12">
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+          <Skeleton className="h-16 rounded-xl" />
+        </div>
+        <SkeletonCard>
+          <div className="px-6 py-4">
+            <Skeleton className="h-4 w-40" />
+          </div>
+          <div className="divide-y divide-white/[0.04]">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-6 py-4">
+                <SkeletonCircle className="w-8 h-8" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-2/3" />
+                  <Skeleton className="h-3 w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </SkeletonCard>
       </div>
     );
   }

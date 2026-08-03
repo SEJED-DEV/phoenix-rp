@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { TICKET_TYPES } from "@/lib/tickets.config";
 import type { Ticket } from "@/components/TicketList";
+import { Skeleton } from "@/components/Skeleton";
 
 interface TicketMessage {
   id: string;
@@ -201,9 +202,29 @@ export default function TicketDetailPage() {
   // ─── Loading / Auth / Error states ───
   if (authLoading || loading) {
     return (
-      <section className="h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-crimson/40 border-t-crimson rounded-full animate-spin" />
-      </section>
+      <div className="h-screen flex flex-col bg-[#050507]">
+        <header className="shrink-0 border-b border-white/[0.06] bg-[#050507]/90 z-30">
+          <div className="h-16" />
+          <div className="max-w-6xl mx-auto px-4 sm:px-6">
+            <div className="flex items-center gap-3 py-2">
+              <Skeleton className="w-8 h-8 rounded-lg" />
+              <div className="flex-1 min-w-0">
+                <Skeleton className="h-3 w-40 mb-2" />
+                <Skeleton className="h-4 w-64" />
+              </div>
+            </div>
+          </div>
+        </header>
+        <div className="flex-1 overflow-hidden max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-4">
+          <Skeleton className="h-20 w-2/3 rounded-2xl ml-auto" />
+          <Skeleton className="h-16 w-3/4 rounded-2xl" />
+          <Skeleton className="h-24 w-1/2 rounded-2xl ml-auto" />
+          <Skeleton className="h-14 w-3/5 rounded-2xl" />
+        </div>
+        <div className="shrink-0 border-t border-white/[0.06] p-4">
+          <Skeleton className="h-12 w-full max-w-6xl mx-auto rounded-xl" />
+        </div>
+      </div>
     );
   }
 
