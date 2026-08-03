@@ -80,6 +80,8 @@ export default function TicketDetailPage() {
   const [isInternal, setIsInternal] = useState(false);
   const [sending, setSending] = useState(false);
   const [updating, setUpdating] = useState(false);
+  const [reminding, setReminding] = useState(false);
+  const [remindMsg, setRemindMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [flash, setFlash] = useState(false);
   const [jumpedToLatest, setJumpedToLatest] = useState(false);
 
@@ -179,6 +181,28 @@ export default function TicketDetailPage() {
       });
       if (res.ok) { const d = await res.json(); setTicket(d.ticket); }
     } finally { setUpdating(false); }
+  };
+
+  const handleRemind = async () => {
+    if (reminding) return;
+    setReminding(true);
+    setRemindMsg(null);
+    try {
+      const res = await fetch(`/api/tickets/${id}/remind`, { method: "POST" });
+      const data = await res.json().catch(() => null);
+      if (res.ok && data) {
+        setRemindMsg({
+          ok: true,
+          text: data.delivered === "dm"
+            ? `Reminder sent to @${data.user} via DM`
+            : `DMs closed — reminder posted to #ticket-reminders`,
+        });
+      } else {
+        setRemindMsg({ ok: false, text: (data?.error) || "Failed to send reminder" });
+      }
+    } catch {
+      setRemindMsg({ ok: false, text: "Failed to send reminder" });
+    } finally { setReminding(false); }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -388,7 +412,21 @@ export default function TicketDetailPage() {
               >
                 {ticket.assignedTo ? "Unassign" : "Assign"}
               </button>
+
+              {/* Remind */}
+              <button
+                onClick={handleRemind}
+                disabled={reminding || updating}
+                className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all border border-white/[0.08] text-text-muted hover:border-white/[0.15] hover:text-text disabled:opacity-40"
+              >
+                {reminding ? "Sending…" : "Remind"}
+              </button>
             </div>
+            {remindMsg && (
+              <p className={`text-[11px] mt-1 ${remindMsg.ok ? "text-emerald-400" : "text-red-400"}`}>
+                {remindMsg.text}
+              </p>
+            )}
           </div>
         )}
       </header>
