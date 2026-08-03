@@ -122,3 +122,15 @@ export function canViewTicketType(ticketType: TicketType, userRoles: string[]): 
   if (ticketType.viewRoles.length === 0) return false;
   return ticketType.viewRoles.some((r) => userRoles.includes(r));
 }
+
+/** Converts a ticket type's hex color into inline style values for badges/pills. */
+export function getTicketTypeStyle(t: TicketType): { color: string; bg: string; border: string } {
+  const r = (t.color >> 16) & 0xff;
+  const g = (t.color >> 8) & 0xff;
+  const b = t.color & 0xff;
+  return {
+    color: `rgb(${r}, ${g}, ${b})`,
+    bg: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    border: `rgba(${r}, ${g}, ${b}, 0.35)`,
+  };
+}

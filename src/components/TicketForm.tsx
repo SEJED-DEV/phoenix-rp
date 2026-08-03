@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { type TicketType } from "@/lib/tickets.config";
+import { type TicketType, getTicketTypeStyle } from "@/lib/tickets.config";
 
 interface TicketFormProps {
   availableTypes: TicketType[];
@@ -73,6 +73,8 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
             <div className="grid grid-cols-2 gap-2">
               {availableTypes.map((t) => {
                 const isOpen = openTicketTypes.includes(t.slug);
+                const tStyle = getTicketTypeStyle(t);
+                const isSelected = type === t.slug;
                 return (
                   <button
                     key={t.slug}
@@ -82,16 +84,23 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
                     className={`p-3 rounded-xl border text-left transition-all duration-200 ${
                       isOpen
                         ? "border-white/[0.04] bg-white/[0.01] opacity-40 cursor-not-allowed"
-                        : type === t.slug
-                          ? "border-crimson/50 bg-crimson/[0.08]"
+                        : isSelected
+                          ? "bg-white/[0.03]"
                           : "border-white/[0.06] bg-white/[0.02] hover:border-white/[0.12]"
                     }`}
+                    style={!isOpen && isSelected ? { borderColor: tStyle.border, background: tStyle.bg } : undefined}
                   >
                     <div className="flex items-center gap-2">
-                      <svg className="w-4 h-4 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg
+                        className="w-4 h-4 shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        style={isOpen ? undefined : { color: tStyle.color }}
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={t.icon} />
                       </svg>
-                      <span className={`text-sm font-medium ${isOpen ? "text-text-muted" : type === t.slug ? "text-text" : "text-text-dim"}`}>
+                      <span className={`text-sm font-medium ${isOpen ? "text-text-muted" : isSelected ? "text-text" : "text-text-dim"}`}>
                         {t.name}
                       </span>
                     </div>

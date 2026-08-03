@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { TICKET_TYPES } from "@/lib/tickets.config";
+import { TICKET_TYPES, getTicketTypeStyle } from "@/lib/tickets.config";
 
 export interface Ticket {
   id: string;
@@ -176,7 +176,7 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
       ) : (
         <div className="border border-white/[0.06] rounded-xl overflow-hidden">
           {/* Table header */}
-          <div className="hidden sm:grid grid-cols-[1fr_120px_100px_90px_100px] gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[11px] text-text-muted uppercase tracking-wider font-semibold">
+          <div className="hidden sm:grid grid-cols-[1fr_140px_100px_90px_100px] gap-3 px-4 py-2.5 bg-white/[0.02] border-b border-white/[0.06] text-[11px] text-text-muted uppercase tracking-wider font-semibold">
             <span>Subject</span>
             <span>Type</span>
             <span>Status</span>
@@ -187,6 +187,7 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
           {/* Rows */}
           {paginated.map((ticket, i) => {
             const typeInfo = TICKET_TYPES.find((t) => t.slug === ticket.type);
+            const typeStyle = typeInfo ? getTicketTypeStyle(typeInfo) : null;
             const statusStyle = STATUS_STYLES[ticket.status] || STATUS_STYLES.open;
             const priorityStyle = PRIORITY_STYLES[ticket.priority || "medium"] || PRIORITY_STYLES.medium;
             const date = new Date(ticket.createdAt);
@@ -197,7 +198,7 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
               <button
                 key={ticket.id}
                 onClick={() => router.push(`/tickets/${ticket.id}`)}
-                className="ticket-row-enter w-full text-left grid grid-cols-1 sm:grid-cols-[1fr_120px_100px_90px_100px] gap-2 sm:gap-3 px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.03] transition-colors group"
+                className="ticket-row-enter w-full text-left grid grid-cols-1 sm:grid-cols-[1fr_140px_100px_90px_100px] gap-2 sm:gap-3 px-4 py-3 border-b border-white/[0.04] last:border-b-0 hover:bg-white/[0.03] transition-colors group"
                 style={{ animationDelay: `${i * 30}ms` }}
               >
                 {/* Subject + meta */}
@@ -229,14 +230,17 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
                 </div>
 
                 {/* Type */}
-                <div className="hidden sm:flex items-center gap-1.5">
-                  {typeInfo && (
-                    <>
-                      <svg className="w-3 h-3 text-text-muted/40 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="hidden sm:flex items-center">
+                  {typeInfo && typeStyle && (
+                    <span
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-medium border whitespace-nowrap"
+                      style={{ color: typeStyle.color, background: typeStyle.bg, borderColor: typeStyle.border }}
+                    >
+                      <svg className="w-3 h-3 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeInfo.icon} />
                       </svg>
-                      <span className="text-xs text-text-muted truncate">{typeInfo.name}</span>
-                    </>
+                      {typeInfo.name}
+                    </span>
                   )}
                 </div>
 
@@ -264,7 +268,14 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
                     {statusStyle.label}
                   </span>
                   <span className="text-[10px] text-text-muted/50">{priorityStyle.label}</span>
-                  {typeInfo && <span className="text-[10px] text-text-muted/40">{typeInfo.name}</span>}
+                  {typeInfo && typeStyle && (
+                    <span
+                      className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium border whitespace-nowrap"
+                      style={{ color: typeStyle.color, background: typeStyle.bg, borderColor: typeStyle.border }}
+                    >
+                      {typeInfo.name}
+                    </span>
+                  )}
                   <span className="text-[10px] text-text-muted/40 ml-auto">{dateStr}</span>
                 </div>
               </button>

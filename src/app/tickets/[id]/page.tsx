@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
-import { TICKET_TYPES } from "@/lib/tickets.config";
+import { TICKET_TYPES, getTicketTypeStyle } from "@/lib/tickets.config";
 import type { Ticket } from "@/components/TicketList";
 import { Skeleton } from "@/components/Skeleton";
 
@@ -261,6 +261,7 @@ export default function TicketDetailPage() {
   if (!ticket) return null;
 
   const typeInfo = TICKET_TYPES.find((t) => t.slug === ticket.type);
+  const typeStyle = typeInfo ? getTicketTypeStyle(typeInfo) : null;
   const statusInfo = STATUS_OPTIONS.find((s) => s.value === ticket.status);
   const createdAt = new Date(ticket.createdAt).toLocaleString("en-US", {
     month: "long", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
@@ -294,8 +295,16 @@ export default function TicketDetailPage() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-text-muted font-mono">{ticket.id.slice(0, 8)}</span>
-                {typeInfo && (
-                  <span className="text-[9px] text-text-muted/60 uppercase tracking-wider">{typeInfo.name}</span>
+                {typeInfo && typeStyle && (
+                  <span
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border"
+                    style={{ color: typeStyle.color, background: typeStyle.bg, borderColor: typeStyle.border }}
+                  >
+                    <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeInfo.icon} />
+                    </svg>
+                    {typeInfo.name}
+                  </span>
                 )}
                 <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusInfo?.bg} ${statusInfo?.color} ${statusInfo?.border}`}>
                   <span className={`w-1 h-1 rounded-full ${ticket.status === "open" ? "bg-emerald-400" : ticket.status === "in-progress" ? "bg-amber-400" : "bg-white/30"}`} />
