@@ -76,6 +76,25 @@ export async function getUserRoles(userId: string): Promise<string[]> {
   return info?.roles ?? [];
 }
 
+/**
+ * Returns whether the user is currently a member of the guild.
+ * `false` means the member is not in the guild (Discord 404); `null`
+ * means the Discord API call failed, distinct from a real absence.
+ */
+export async function isMemberInGuild(userId: string): Promise<boolean | null> {
+  try {
+    const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${userId}`;
+    const res = await fetch(url, {
+      headers: { Authorization: `Bot ${BOT_TOKEN}` },
+    });
+    if (res.status === 404) return false;
+    if (!res.ok) return null;
+    return true;
+  } catch {
+    return null;
+  }
+}
+
 export interface StaffMember {
   userId: string;
   username: string;

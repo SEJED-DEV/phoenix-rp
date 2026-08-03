@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFreshSession } from "@/lib/auth";
-import { ROLES } from "@/lib/discord";
+import { ROLES, isMemberInGuild } from "@/lib/discord";
 
 export type UserState =
   | { state: "logged_out" }
@@ -38,5 +38,13 @@ export async function GET() {
   if (roles.includes(ROLES.CHECKIN)) {
     return NextResponse.json({ state: "needs_checkin", user, isStaff } satisfies UserState);
   }
+
+  if (roles.length === 0) {
+    const inGuild = await isMemberInGuild(session.userId);
+    if (inGuild === false) {
+      return NextResponse.json({ state: "not_in_server", user, isStaff: false } satisfies UserState);
+    }
+  }
+
   return NextResponse.json({ state: "needs_apply", user, isStaff } satisfies UserState);
 }

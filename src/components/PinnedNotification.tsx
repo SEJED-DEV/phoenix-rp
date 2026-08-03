@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Link from "next/link";
 
-const DISCORD_INVITE = "#"; // TODO: Replace with real invite link
+const DISCORD_INVITE = "https://discord.gg/rapZCCQBv";
 
 const CONFIGS = {
   not_in_server: {
