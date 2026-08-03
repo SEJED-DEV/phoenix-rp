@@ -5,10 +5,17 @@ import { getSiteUrl } from "@/lib/site-url";
 
 const SITE_URL = getSiteUrl();
 
+function redirectTo(path: string, status = 302): NextResponse {
+  const res = NextResponse.redirect(new URL(path, SITE_URL), status);
+  res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  res.headers.set("Cache-Control", "no-store");
+  return res;
+}
+
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code");
   if (!code) {
-    return NextResponse.redirect(new URL("/?error=no_code", SITE_URL));
+    return redirectTo("/?error=no_code");
   }
 
   try {
@@ -29,7 +36,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!tokenRes.ok) {
-      return NextResponse.redirect(new URL("/?error=token_exchange_failed", SITE_URL));
+      return redirectTo("/?error=token_exchange_failed");
     }
 
     const { access_token } = await tokenRes.json();
@@ -40,7 +47,7 @@ export async function GET(req: NextRequest) {
     });
 
     if (!userRes.ok) {
-      return NextResponse.redirect(new URL("/?error=user_fetch_failed", SITE_URL));
+      return redirectTo("/?error=user_fetch_failed");
     }
 
     const user = await userRes.json();
@@ -70,9 +77,9 @@ export async function GET(req: NextRequest) {
 
     await setSessionCookie(token);
 
-    return NextResponse.redirect(new URL("/", SITE_URL));
+    return redirectTo("/");
   } catch (error) {
     console.error("OAuth callback error:", error);
-    return NextResponse.redirect(new URL("/?error=internal", SITE_URL));
+    return redirectTo("/?error=internal");
   }
 }

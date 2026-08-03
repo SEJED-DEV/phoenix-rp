@@ -41,15 +41,29 @@ async function fetchLiveRoles(userId: string): Promise<string[] | null> {
 }
 
 export const config = {
-  matcher: ["/staff-panel/:path*", "/api/staff/:path+"],
+  matcher: ["/staff-panel/:path*", "/api/:path*"],
 };
 
 export async function proxy(req: NextRequest) {
+  const pathname = req.nextUrl.pathname;
+
+  // Public API routes: keep them working, but never let search engines index
+  // them — URLs like /api/auth/callback?code=... trip Google's phishing
+  // heuristics and flag the whole domain.
+  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/staff")) {
+    const res = NextResponse.next();
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    res.headers.set("Cache-Control", "no-store");
+    return res;
+  }
+
   const token = req.cookies.get(COOKIE_NAME)?.value;
 
   if (!token) {
-    if (req.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (pathname.startsWith("/api/")) {
+      const res = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return res;
     }
     return NextResponse.redirect(new URL("/", getSiteUrl()));
   }
@@ -66,8 +80,10 @@ export async function proxy(req: NextRequest) {
 
     const isStaff = roles.includes(STAFF_ROLE);
     if (!isStaff) {
-      if (req.nextUrl.pathname.startsWith("/api/")) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      if (pathname.startsWith("/api/")) {
+        const res = NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        res.headers.set("X-Robots-Tag", "noindex, nofollow");
+        return res;
       }
       return NextResponse.redirect(new URL("/", getSiteUrl()));
     }
@@ -83,6 +99,7 @@ export async function proxy(req: NextRequest) {
     headers.set("x-role-level", roleLevel);
 
     const response = NextResponse.next({ request: { headers } });
+    response.headers.set("X-Robots-Tag", "noindex, nofollow");
 
     const { iat: _iat, exp: _exp, ...sessionData } = payload;
     const updatedToken = await new SignJWT({ ...sessionData, roles, isStaff })
@@ -101,8 +118,10 @@ export async function proxy(req: NextRequest) {
 
     return response;
   } catch {
-    if (req.nextUrl.pathname.startsWith("/api/")) {
-      return NextResponse.json({ error: "Invalid session" }, { status: 401 });
+    if (pathname.startsWith("/api/")) {
+      const res = NextResponse.json({ error: "Invalid session" }, { status: 401 });
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return res;
     }
     return NextResponse.redirect(new URL("/", getSiteUrl()));
   }
