@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createSession, setSessionCookie } from "@/lib/auth";
 import { getUserRoles, ROLES } from "@/lib/discord";
+import { logLogin } from "@/lib/discord-log";
 import { getSiteUrl } from "@/lib/site-url";
 
 const SITE_URL = getSiteUrl();
@@ -76,6 +77,8 @@ export async function GET(req: NextRequest) {
     });
 
     await setSessionCookie(token);
+
+    logLogin({ userId: user.id, username: user.username, isStaff });
 
     return redirectTo("/");
   } catch (error) {

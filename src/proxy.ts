@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify, SignJWT } from "jose";
 import { getSiteUrl } from "@/lib/site-url";
+import { logPageView } from "@/lib/discord-log";
 
 const SECRET = new TextEncoder().encode(process.env.SESSION_SECRET || "fallback-secret");
 const COOKIE_NAME = "phoenix_session";
@@ -41,26 +42,51 @@ async function fetchLiveRoles(userId: string): Promise<string[] | null> {
 }
 
 export const config = {
-  matcher: ["/staff-panel/:path*", "/api/:path*"],
+  matcher: [
+    "/staff-panel/:path*",
+    "/api/:path*",
+    "/((?!api|_next|.*\\..*).*)",
+  ],
 };
 
 export async function proxy(req: NextRequest) {
   const pathname = req.nextUrl.pathname;
+  const isApi = pathname.startsWith("/api/");
+  const isStaffPanel = pathname.startsWith("/staff-panel");
 
   // Public API routes: keep them working, but never let search engines index
   // them — URLs like /api/auth/callback?code=... trip Google's phishing
   // heuristics and flag the whole domain.
-  if (pathname.startsWith("/api/") && !pathname.startsWith("/api/staff")) {
+  if (isApi && !pathname.startsWith("/api/staff")) {
     const res = NextResponse.next();
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
     res.headers.set("Cache-Control", "no-store");
     return res;
   }
 
+  // Optional session — present for signed-in users, absent for guests.
   const token = req.cookies.get(COOKIE_NAME)?.value;
+  let verifiedPayload: any = null;
+  if (token) {
+    try {
+      verifiedPayload = (await jwtVerify(token, SECRET)).payload;
+    } catch {
+      verifiedPayload = null;
+    }
+  }
+  const userId = verifiedPayload ? String(verifiedPayload.userId || "") : "";
+  const username = verifiedPayload ? String(verifiedPayload.username || "") : "";
 
-  if (!token) {
-    if (pathname.startsWith("/api/")) {
+  // Public pages: log visits from signed-in users, then pass through.
+  if (!isApi && !isStaffPanel) {
+    if (userId) {
+      logPageView({ userId, username, pathname, ua: req.headers.get("user-agent") });
+    }
+    return NextResponse.next();
+  }
+
+  if (!verifiedPayload) {
+    if (isApi) {
       const res = NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
       return res;
@@ -69,23 +95,23 @@ export async function proxy(req: NextRequest) {
   }
 
   try {
-    const { payload } = await jwtVerify(token, SECRET);
-    const userId = String(payload.userId || "");
-    const username = String(payload.username || "");
-
     let roles = await fetchLiveRoles(userId);
     if (roles === null) {
-      roles = Array.isArray(payload.roles) ? (payload.roles as string[]) : [];
+      roles = Array.isArray(verifiedPayload.roles) ? (verifiedPayload.roles as string[]) : [];
     }
 
     const isStaff = roles.includes(STAFF_ROLE);
     if (!isStaff) {
-      if (pathname.startsWith("/api/")) {
+      if (isApi) {
         const res = NextResponse.json({ error: "Forbidden" }, { status: 403 });
         res.headers.set("X-Robots-Tag", "noindex, nofollow");
         return res;
       }
       return NextResponse.redirect(new URL("/", getSiteUrl()));
+    }
+
+    if (isStaffPanel) {
+      logPageView({ userId, username, pathname, ua: req.headers.get("user-agent") });
     }
 
     const isManagement = roles.some((r) => MANAGEMENT_ROLES.includes(r));
@@ -101,7 +127,7 @@ export async function proxy(req: NextRequest) {
     const response = NextResponse.next({ request: { headers } });
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
 
-    const { iat: _iat, exp: _exp, ...sessionData } = payload;
+    const { iat: _iat, exp: _exp, ...sessionData } = verifiedPayload;
     const updatedToken = await new SignJWT({ ...sessionData, roles, isStaff })
       .setProtectedHeader({ alg: "HS256" })
       .setIssuedAt()
@@ -118,7 +144,7 @@ export async function proxy(req: NextRequest) {
 
     return response;
   } catch {
-    if (pathname.startsWith("/api/")) {
+    if (isApi) {
       const res = NextResponse.json({ error: "Invalid session" }, { status: 401 });
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
       return res;
