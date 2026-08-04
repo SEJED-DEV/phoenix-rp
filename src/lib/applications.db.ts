@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { getApplyConfig, APPLICATION_SLUGS } from "./apply.config";
+import { getApplyConfig, APPLICATION_SLUGS, ON_SITE_APPLICATIONS } from "./apply.config";
 
 export interface ApplicationRow {
   id: number;
@@ -46,19 +46,24 @@ export function hasPendingApplication(slug: string, discordId: string): boolean 
   return !!row;
 }
 
-export function getApplications(slug: string, opts: { status?: string; page?: number; limit?: number } = {}): { applications: ApplicationRow[]; total: number } {
+export function getApplications(slug: string, opts: { status?: string; page?: number; limit?: number; q?: string } = {}): { applications: ApplicationRow[]; total: number } {
   validateSlug(slug);
   const table = getTable(slug);
   const db = getDb();
-  const { status, page = 1, limit = 20 } = opts;
+  const { status, page = 1, limit = 20, q } = opts;
   const offset = (page - 1) * limit;
 
-  let where = "";
-  let params: unknown[] = [];
+  const clauses: string[] = [];
+  const params: unknown[] = [];
   if (status) {
-    where = "WHERE status = ?";
-    params = [status];
+    clauses.push("status = ?");
+    params.push(status);
   }
+  if (q) {
+    clauses.push("username LIKE ?");
+    params.push(`%${q}%`);
+  }
+  const where = clauses.length > 0 ? `WHERE ${clauses.join(" AND ")}` : "";
 
   const countRow = db.prepare(`SELECT COUNT(*) as count FROM ${table} ${where}`).get(...params) as { count: number };
   const applications = db.prepare(`SELECT * FROM ${table} ${where} ORDER BY id DESC LIMIT ? OFFSET ?`).all(...params, limit, offset) as ApplicationRow[];
@@ -102,13 +107,31 @@ export function countApplicationsByStatus(slug: string): { pending: number; appr
   return counts;
 }
 
-export function countAllApplications(): { slug: string; label: string; pending: number; total: number }[] {
+export function countPendingApplications(): number {
   const db = getDb();
-  return APPLICATION_SLUGS.map((slug) => {
+  let total = 0;
+  for (const slug of ON_SITE_APPLICATIONS) {
+    const row = db.prepare(
+      `SELECT COUNT(*) AS c FROM ${getTable(slug)} WHERE status = 'pending'`
+    ).get() as { c: number };
+    total += row.c;
+  }
+  return total;
+}
+
+export function countAllApplications(): { slug: string; label: string; pending: number; approved: number; denied: number; total: number }[] {
+  const db = getDb();
+  return ON_SITE_APPLICATIONS.map((slug) => {
     const table = getTable(slug);
-    const pending = (db.prepare(`SELECT COUNT(*) as count FROM ${table} WHERE status = 'pending'`).get() as { count: number }).count;
+    const rows = db.prepare(`SELECT status, COUNT(*) as count FROM ${table} GROUP BY status`).all() as { status: string; count: number }[];
+    const counts = { pending: 0, approved: 0, denied: 0 };
+    for (const row of rows) {
+      if (row.status in counts) {
+        counts[row.status as keyof typeof counts] = row.count;
+      }
+    }
     const total = (db.prepare(`SELECT COUNT(*) as count FROM ${table}`).get() as { count: number }).count;
     const config = getApplyConfig(slug)!;
-    return { slug, label: config.label, pending, total };
+    return { slug, label: config.label, pending: counts.pending, approved: counts.approved, denied: counts.denied, total };
   });
 }

@@ -25,7 +25,7 @@ export const PROFILE_ROLES: ProfileRole[] = [
   { id: "1507135880824094751", name: "Developer", color: "#3b82f6" },
   { id: "1504840077879017564", name: "Donator", color: "#eab308" },
   { id: "1447891049237188679", name: "Booster", color: "#a855f7" },
-  { id: "1504840081926525069", name: "Whitelisted", color: "#22c55e" },
+  { id: "1533959429697966233", name: "🔑 | Whitelisted S2", color: "#22c55e" },
   { id: "1504840125245554769", name: "Banned", color: "#dc2626" },
   { id: "1504840125690155191", name: "Blacklisted", color: "#7f1d1d" },
   { id: "1504840124251242578", name: "Staff Warn 2", color: "#b91c1c" },

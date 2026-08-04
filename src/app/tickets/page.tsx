@@ -62,25 +62,36 @@ export default function TicketsPage() {
   if (loading || fetching) {
     return (
       <section className="relative min-h-screen px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
-        <div className="max-w-5xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
             <div>
+              <Skeleton className="h-3 w-36 mb-4" />
               <Skeleton className="h-14 sm:h-16 w-56 mb-3" />
-              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-44" />
             </div>
-            <Skeleton className="h-11 w-32 rounded-xl" />
+            <Skeleton className="h-12 w-40 rounded-full" />
           </div>
-          <div className="grid grid-cols-4 gap-2 mb-6">
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
-            <Skeleton className="h-16 rounded-lg" />
+          <div className="tk-stats mb-8">
+            {[...Array(4)].map((_, i) => (
+              <SkeletonCard key={i} className="h-16 rounded-xl" />
+            ))}
           </div>
-          <div className="space-y-3">
-            <SkeletonCard className="p-5"><Skeleton className="h-4 w-24" /></SkeletonCard>
-            <SkeletonCard className="p-5"><Skeleton className="h-4 w-32" /></SkeletonCard>
-            <SkeletonCard className="p-5"><Skeleton className="h-4 w-28" /></SkeletonCard>
-            <SkeletonCard className="p-5"><Skeleton className="h-4 w-36" /></SkeletonCard>
+          <div className="tk-masonry">
+            {[...Array(6)].map((_, i) => (
+              <SkeletonCard key={i} className="h-44 rounded-2xl p-5">
+                <div className="flex items-center gap-2 mb-3">
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                  <Skeleton className="h-3 w-28" />
+                </div>
+                <Skeleton className="h-4 w-3/4 mb-3" />
+                <Skeleton className="h-3 w-full mb-2" />
+                <Skeleton className="h-3 w-2/3 mb-4" />
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </SkeletonCard>
+            ))}
           </div>
         </div>
       </section>
@@ -116,47 +127,94 @@ export default function TicketsPage() {
         <div className="absolute bottom-[-20%] right-[10%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+      <div className="relative z-10 max-w-6xl mx-auto px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
           <div>
-            <h1 className="font-display text-5xl sm:text-7xl fire-text mb-2">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="h-px w-10 bg-gradient-to-r from-crimson to-transparent" />
+              <span className="font-display text-[11px] tracking-[0.35em] text-crimson uppercase">Phoenix Support</span>
+            </div>
+            <h1 className="font-display text-5xl sm:text-7xl fire-text mb-3">
               {isStaff ? "All Tickets" : "My Tickets"}
             </h1>
-            <p className="text-text-muted text-sm">
+            <p className="text-text-muted text-sm max-w-md">
               {isStaff
-                ? "Manage and respond to community tickets."
+                ? "Manage and respond to community tickets in real time."
                 : "Submit and track your support tickets."}
             </p>
           </div>
           <button
             onClick={() => setShowForm(true)}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-crimson hover:bg-crimson/80 text-white text-sm font-semibold transition-colors shrink-0"
+            className="hero-btn-primary shrink-0"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            New Ticket
+            <span className="hero-btn-inner">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              New Ticket
+            </span>
           </button>
         </div>
 
         {(isStaff || tickets.length > 0) && (
-          <div className="grid grid-cols-4 gap-2 mb-6">
-            <div className="px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-              <div className="text-lg font-bold text-text">{stats.total}</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider">Total</div>
-            </div>
-            <div className="px-3 py-2.5 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03]">
-              <div className="text-lg font-bold text-emerald-400">{stats.open}</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider">Open</div>
-            </div>
-            <div className="px-3 py-2.5 rounded-lg border border-amber-500/15 bg-amber-500/[0.03]">
-              <div className="text-lg font-bold text-amber-400">{stats.inProgress}</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider">In Progress</div>
-            </div>
-            <div className="px-3 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02]">
-              <div className="text-lg font-bold text-text-muted">{stats.closed}</div>
-              <div className="text-[10px] text-text-muted uppercase tracking-wider">Closed</div>
-            </div>
+          <div className="tk-stats">
+            {[
+              {
+                key: "total",
+                label: "Total",
+                value: stats.total,
+                color: "#c41e3a",
+                icon: "M3 6h18M3 12h18M3 18h12",
+              },
+              {
+                key: "open",
+                label: "Open",
+                value: stats.open,
+                color: "#34d399",
+                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
+              },
+              {
+                key: "in-progress",
+                label: "In Progress",
+                value: stats.inProgress,
+                color: "#fbbf24",
+                icon: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
+              },
+              {
+                key: "closed",
+                label: "Closed",
+                value: stats.closed,
+                color: "#6b5e4a",
+                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
+              },
+            ].map((stat, i) => {
+              const pct = stats.total > 0 ? Math.round((stat.value / stats.total) * 100) : 0;
+              return (
+                <div
+                  key={stat.key}
+                  className="tk-stat"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  <div
+                    className="tk-stat-icon"
+                    style={{ color: stat.color, background: `${stat.color}14`, borderColor: `${stat.color}3D` }}
+                  >
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
+                    </svg>
+                  </div>
+                  <div>
+                    <div key={stat.value} className={`tk-stat-num stat-bump`} style={{ color: stat.color }}>
+                      {stat.value}
+                    </div>
+                    <div className="tk-stat-label">{stat.label}</div>
+                  </div>
+                  <div className="tk-stat-bar">
+                    <span style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 

@@ -11,6 +11,9 @@ const COLORS = {
 const APPLICATIONS_CHANNEL = process.env.DISCORD_APPLICATIONS_CHANNEL;
 const RESULT_CHANNEL = process.env.DISCORD_APPLICATIONS_RESULT_CHANNEL;
 
+const INTERVIEW_CHANNEL = "1504840565080985601";
+const INTERVIEW_VOICE_CHANNEL = "1504840361535869091";
+
 function toV2(container: ContainerBuilder): unknown[] {
   return [container.toJSON()];
 }
@@ -99,6 +102,42 @@ export async function notifyApplicationResult(info: ApplicationResultInfo, baseU
   for (const result of results) {
     if (result.status === "rejected") {
       console.error("[notify] Failed to deliver application result:", result.reason);
+    }
+  }
+}
+
+export async function notifyWhitelistResult(info: ApplicationResultInfo, _baseUrl: string): Promise<void> {
+  const approved = info.status === "approved";
+  const noteLine = info.note ? `Reviewer note: ${info.note}` : null;
+  const interviewLine = `Please join the voice channel <#${INTERVIEW_VOICE_CHANNEL}> to proceed with your interview.`;
+
+  const channelLines = [
+    `<@${info.discordId}> — ${info.username}'s whitelist application was **${approved ? "approved" : "denied"}**.`,
+  ];
+  if (approved) channelLines.push(interviewLine);
+  if (noteLine) channelLines.push(noteLine);
+
+  const dmLines = [
+    `Your whitelist application was **${approved ? "approved" : "denied"}**.`,
+  ];
+  if (approved) dmLines.push(interviewLine);
+  if (noteLine) dmLines.push(noteLine);
+
+  const channelContainer = new ContainerBuilder()
+    .setAccentColor(approved ? COLORS.approved : COLORS.denied)
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(channelLines.join("\n")));
+
+  const dmContainer = new ContainerBuilder()
+    .setAccentColor(approved ? COLORS.approved : COLORS.denied)
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(dmLines.join("\n")));
+
+  const posts: Promise<boolean>[] = [sendContainer(INTERVIEW_CHANNEL, toV2(channelContainer))];
+  posts.push(sendDmContainer(info.discordId, toV2(dmContainer)));
+
+  const results = await Promise.allSettled(posts);
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error("[notify] Failed to deliver whitelist result:", result.reason);
     }
   }
 }

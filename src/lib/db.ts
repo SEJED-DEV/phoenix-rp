@@ -128,6 +128,38 @@ export function getDb(): Database.Database {
     )
   `);
 
+  // ─── Dynamic Application Questions ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS application_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      dept TEXT NOT NULL,
+      questionKey TEXT NOT NULL,
+      label TEXT NOT NULL,
+      type TEXT NOT NULL DEFAULT 'text',
+      required INTEGER NOT NULL DEFAULT 0,
+      placeholder TEXT,
+      options TEXT,
+      position INTEGER NOT NULL DEFAULT 0,
+      updatedBy TEXT,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (dept, questionKey)
+    )
+  `);
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS application_question_editors (
+      dept TEXT NOT NULL,
+      granteeType TEXT NOT NULL,
+      granteeId TEXT NOT NULL,
+      granteeName TEXT NOT NULL DEFAULT '',
+      grantedBy TEXT,
+      grantedByUser TEXT,
+      grantedAt TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (dept, granteeType, granteeId)
+    )
+  `);
+
   // ─── Application Tables (one per department) ───
 
   const APPLICATION_SLUGS = [
@@ -135,7 +167,7 @@ export function getDb(): Database.Database {
     "police",
     "ems",
     "mechanic",
-    "gang",
+    "family",
     "doj",
     "staff_staffteam",
     "ban_appeal",

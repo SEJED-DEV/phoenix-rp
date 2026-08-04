@@ -25,6 +25,7 @@ export default function Footer() {
                 ["Rules", "/rules"],
                 ["Departments", "/departments"],
                 ["Gallery", "/gallery"],
+                ["Storyline", "/storyline"],
                 ["FAQ", "/faq"],
                 ["Staff", "/staff"],
                 ["Tickets", "/tickets"],

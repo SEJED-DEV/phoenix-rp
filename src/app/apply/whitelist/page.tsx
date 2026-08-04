@@ -4,6 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
+import { WHITELIST_FIELDS, type ApplicationField } from "@/lib/applications.data";
+import FormFields from "@/components/FormFields";
 import PageSkeleton from "@/components/PageSkeleton";
 
 const WHITELIST_IMAGES = [
@@ -12,20 +14,12 @@ const WHITELIST_IMAGES = [
   "/media/ChatGPT_Image_24_mai_2026_11_10_26.png",
 ];
 
-const FIELDS = [
-  { name: "realName", label: "Real Name", type: "text" as const, required: true, placeholder: "Your real name" },
-  { name: "age", label: "Age", type: "number" as const, required: true, placeholder: "Your age" },
-  { name: "discordTag", label: "Discord Tag", type: "text" as const, required: true, placeholder: "username" },
-  { name: "whyJoin", label: "Why do you want to join Phoenix RP?", type: "textarea" as const, required: true, placeholder: "Tell us why you want to join the community..." },
-  { name: "rpExperience", label: "Do you have FiveM roleplay experience?", type: "textarea" as const, required: false, placeholder: "Describe any previous RP experience..." },
-  { name: "hearAbout", label: "How did you hear about us?", type: "text" as const, required: false, placeholder: "Friend, TikTok, YouTube, etc." },
-];
-
 export default function WhitelistApplyPage() {
   const { status, loading } = useAuth();
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<ApplicationField[]>(WHITELIST_FIELDS);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [heroImage, setHeroImage] = useState(WHITELIST_IMAGES[0]);
@@ -34,6 +28,19 @@ export default function WhitelistApplyPage() {
   useEffect(() => {
     setHeroImage(WHITELIST_IMAGES[Math.floor(Math.random() * WHITELIST_IMAGES.length)]);
     setDiscordUrl(getDiscordLoginUrl());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/apply/questions?dept=whitelist")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q: ApplicationField[] | null) => {
+        if (!cancelled && q) setFields(q);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -168,9 +175,6 @@ export default function WhitelistApplyPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-text placeholder:text-text-dim/50 focus:outline-none focus:border-crimson/40 focus:bg-white/[0.06] transition-all text-sm";
-  const labelClass = "block text-sm font-medium text-text-muted mb-2";
-
   return (
     <section ref={ref} className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -218,30 +222,11 @@ export default function WhitelistApplyPage() {
             transition: "all 1s cubic-bezier(0.16,1,0.3,1) 0.3s",
           }}
         >
-          {FIELDS.map((field) => (
-            <div key={field.name}>
-              <label className={labelClass}>{field.label}</label>
-              {field.type === "textarea" ? (
-                <textarea
-                  required={field.required}
-                  rows={3}
-                  className={inputClass}
-                  placeholder={field.placeholder}
-                  value={form[field.name] || ""}
-                  onChange={(e) => setField(field.name, e.target.value)}
-                />
-              ) : (
-                <input
-                  type={field.type}
-                  required={field.required}
-                  className={inputClass}
-                  placeholder={field.placeholder}
-                  value={form[field.name] || ""}
-                  onChange={(e) => setField(field.name, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
+          {fields.length === 0 ? (
+            <p className="text-text-muted text-sm">No questions configured yet — try again later.</p>
+          ) : (
+            <FormFields fields={fields} form={form} setField={setField} />
+          )}
 
           <button
             type="submit"

@@ -27,14 +27,13 @@ export async function GET(
   }
 
   const isStaff = session.isStaff || false;
+  const roles = session.roles || [];
 
-  if (!isStaff && ticket.userId !== session.userId) {
-    const ticketType = getTicketType(ticket.type);
-    const roles = session.roles || [];
-    const canView = ticketType ? canViewTicketType(ticketType, roles) : false;
-    if (!canView) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const ticketType = getTicketType(ticket.type);
+  const canView =
+    ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  if (!canView) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") || "1", 10));
@@ -75,6 +74,14 @@ export async function PATCH(
   const ticket = getTicketById(id);
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  const roles = session.roles || [];
+  const ticketType = getTicketType(ticket.type);
+  const canView =
+    ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  if (!canView) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   let updated = ticket;
@@ -121,13 +128,12 @@ export async function POST(
 
   const isStaff = session.isStaff || false;
 
-  if (!isStaff && ticket.userId !== session.userId) {
-    const ticketType = getTicketType(ticket.type);
-    const roles = session.roles || [];
-    const canView = ticketType ? canViewTicketType(ticketType, roles) : false;
-    if (!canView) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+  const roles = session.roles || [];
+  const ticketType = getTicketType(ticket.type);
+  const canView =
+    ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  if (!canView) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   if (ticket.status === "closed") {

@@ -26,7 +26,7 @@ const departments = [
     btnHref: "https://discord.gg/rapZCCQBv",
   },
   {
-    name: "Gangs / Criminal",
+    name: "Families / Criminal",
     desc: "The underground runs deep. Build your crew, claim territory, and rise to power in the city.",
     icon: (
       <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1}>
@@ -34,8 +34,8 @@ const departments = [
         <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 16.121A3 3 0 1012.015 11L11 14H9c0 .768.293 1.536.879 2.121z" />
       </svg>
     ),
-    btn: "Gang Application",
-    btnHref: "/apply/gang",
+    btn: "Family Application",
+    btnHref: "/apply/family",
   },
   {
     name: "Civilian",

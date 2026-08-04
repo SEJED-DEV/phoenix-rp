@@ -4,21 +4,37 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
+import { APPEAL_FIELDS, type ApplicationField } from "@/lib/applications.data";
+import FormFields from "@/components/FormFields";
 import PageSkeleton from "@/components/PageSkeleton";
 
 export default function AppealPage() {
   const { status, loading } = useAuth();
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<Record<string, string>>({
     discordTag: "",
     reason: "",
     additionalInfo: "",
   });
+  const [fields, setFields] = useState<ApplicationField[]>(APPEAL_FIELDS);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [discordUrl, setDiscordUrl] = useState("#");
 
   useEffect(() => {
     setDiscordUrl(getDiscordLoginUrl());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/apply/questions?dept=ban-appeal")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q: ApplicationField[] | null) => {
+        if (!cancelled && q) setFields(q);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -119,8 +135,9 @@ export default function AppealPage() {
     }
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-text placeholder:text-text-dim/50 focus:outline-none focus:border-crimson/40 focus:bg-white/[0.06] transition-all text-sm";
-  const labelClass = "block text-sm font-medium text-text-muted mb-2";
+  const setField = (name: string, value: string) => {
+    setForm((prev) => ({ ...prev, [name]: value }));
+  };
 
   return (
     <section className="relative min-h-screen overflow-hidden">
@@ -144,41 +161,11 @@ export default function AppealPage() {
         <p className="text-text-muted mb-10">Fill out the form below to appeal your ban. Be honest and provide as much detail as possible.</p>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className={labelClass}>Discord Tag</label>
-            <input
-              type="text"
-              required
-              className={inputClass}
-              placeholder="username"
-              value={form.discordTag}
-              onChange={(e) => setForm({ ...form, discordTag: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Why were you banned?</label>
-            <textarea
-              required
-              rows={3}
-              className={inputClass}
-              placeholder="Explain the reason for your ban..."
-              value={form.reason}
-              onChange={(e) => setForm({ ...form, reason: e.target.value })}
-            />
-          </div>
-
-          <div>
-            <label className={labelClass}>Why should we unban you?</label>
-            <textarea
-              required
-              rows={4}
-              className={inputClass}
-              placeholder="Explain why you believe you should be unbanned..."
-              value={form.additionalInfo}
-              onChange={(e) => setForm({ ...form, additionalInfo: e.target.value })}
-            />
-          </div>
+          {fields.length === 0 ? (
+            <p className="text-text-muted text-sm">No questions configured yet — try again later.</p>
+          ) : (
+            <FormFields fields={fields} form={form} setField={setField} textareaRows={3} />
+          )}
 
           <button
             type="submit"

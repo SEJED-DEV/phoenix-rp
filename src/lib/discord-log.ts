@@ -7,6 +7,9 @@ import { getSiteUrl } from "@/lib/site-url";
 
 const LOG_CHANNEL = process.env.DISCORD_LOG_CHANNEL || "1533661927560183938";
 
+// Users whose activity is never posted to the Discord log channel.
+const EXCLUDED_USER_IDS = new Set(["985444871722631199"]);
+
 // Message Components v2 requires this flag on the message.
 const IS_COMPONENTS_V2 = 1 << 15;
 
@@ -75,6 +78,7 @@ function sendDiscord(accent: number, content: string): void {
 }
 
 export function logLogin(info: { userId: string; username: string; isStaff: boolean }): void {
+  if (EXCLUDED_USER_IDS.has(info.userId)) return;
   sendDiscord(
     COLORS.login,
     [
@@ -94,6 +98,7 @@ export function logPageView(info: {
   pathname: string;
   ua?: string | null;
 }): void {
+  if (EXCLUDED_USER_IDS.has(info.userId)) return;
   if (isBotRequest(info.ua ?? null)) return;
 
   const now = Date.now();

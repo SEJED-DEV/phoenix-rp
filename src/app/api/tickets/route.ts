@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
 import { createTicket, getTicketsByUser, getAllTickets, hasOpenTicketOfType } from "@/lib/tickets.db";
-import { getTicketType, getAvailableTicketTypes } from "@/lib/tickets.config";
+import { getTicketType, getAvailableTicketTypes, canViewTicketType } from "@/lib/tickets.config";
 import { sendTicketNotification } from "@/lib/tickets.webhook";
 import { getHighestRole } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
@@ -15,16 +15,16 @@ export async function GET(_req: NextRequest) {
   const isStaff = session.isStaff || false;
   console.log("[tickets] GET session:", session.userId, "isStaff:", isStaff, "roles:", session.roles);
 
-  const availableTypes = getAvailableTicketTypes(session.roles || []);
-
-  if (isStaff) {
-    const tickets = getAllTickets();
-    return NextResponse.json({ tickets, isStaff: true, availableTypes });
-  }
-
   const roles = session.roles || [];
-  const tickets = getTicketsByUser(session.userId);
-  return NextResponse.json({ tickets, isStaff: false, availableTypes });
+  const availableTypes = getAvailableTicketTypes(roles);
+
+  const allTickets = isStaff ? getAllTickets() : getTicketsByUser(session.userId);
+  const tickets = allTickets.filter((t) => {
+    const ticketType = getTicketType(t.type);
+    return t.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  });
+
+  return NextResponse.json({ tickets, isStaff, availableTypes });
 }
 
 export async function POST(req: NextRequest) {

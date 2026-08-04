@@ -37,7 +37,7 @@ const features = [
       </svg>
     ),
     title: "Full Departments",
-    desc: "Police, EMS, Gangs, Civilian, Mechanics, and Justice — find your role.",
+    desc: "Police, EMS, Families, Civilian, Mechanics, and Justice — find your role.",
   },
 ];
 

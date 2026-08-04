@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { APPLICATION_SLUGS } from "@/lib/apply.config";
 import { getApplicationById, updateApplication } from "@/lib/applications.db";
 import { logStaffAction } from "@/lib/activity-log";
-import { notifyApplicationResult } from "@/lib/application-notify";
+import { notifyApplicationResult, notifyWhitelistResult } from "@/lib/application-notify";
+import { addRole, WHITELIST_INTERVIEW_ROLE } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ dept: string; id: string }> }) {
@@ -69,6 +70,14 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
     return NextResponse.json({ error: "Failed to update" }, { status: 500 });
   }
 
+  let roleGranted: boolean | null = null;
+  if (dept === "whitelist" && body.status === "approved") {
+    roleGranted = await addRole(application.discordId, WHITELIST_INTERVIEW_ROLE);
+    if (!roleGranted) {
+      console.error(`[whitelist] Failed to grant interview role ${WHITELIST_INTERVIEW_ROLE} to ${application.discordId}`);
+    }
+  }
+
   logStaffAction({
     actorId,
     actorName,
@@ -76,7 +85,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
     targetId: application.discordId,
     targetName: application.username,
     reason: body.reviewNote,
-    metadata: { department: dept, applicationId: application.id },
+    metadata: { department: dept, applicationId: application.id, roleGranted },
   });
 
   await notifyApplicationResult(
@@ -93,5 +102,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
     getSiteUrl(),
   );
 
-  return NextResponse.json({ success: true });
+  if (dept === "whitelist") {
+    await notifyWhitelistResult(
+      {
+        dept,
+        id: application.id,
+        discordId: application.discordId,
+        username: application.username,
+        status: body.status as "approved" | "denied",
+        note: body.reviewNote,
+        reviewerId: actorId,
+        reviewerName: actorName,
+      },
+      getSiteUrl(),
+    );
+  }
+
+  return NextResponse.json({ success: true, roleGranted });
 }

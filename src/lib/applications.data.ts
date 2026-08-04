@@ -29,7 +29,7 @@ export const APPLICATION_DEPARTMENTS: ApplicationDepartment[] = [
       "/media/ChatGPT_Image_22_juin_2026_02_23_43.png",
       "/media/ChatGPT_Image_24_mai_2026_11_10_26.png",
     ],
-    roleAccess: ["1504840081926525069"],
+    roleAccess: ["1533959429697966233"],
     fields: [],
   },
   {
@@ -93,24 +93,32 @@ export const APPLICATION_DEPARTMENTS: ApplicationDepartment[] = [
     ],
   },
   {
-    slug: "gang",
-    name: "Gang Application",
-    description: "Apply to establish or join a gang in the city.",
+    slug: "family",
+    name: "Family Application",
+    description: "Apply to establish or join a family in the city.",
     image: "/media/departments/gang.png",
     images: [
       "/media/ChatGPT_Image_27_mai_2026_04_17_56.png",
       "/media/ChatGPT_Image_4_juin_2026_16_18_01.png",
       "/media/ChatGPT_Image_Jun_15_2026_11_42_11_PM.png",
     ],
-    roleAccess: ["1504840081926525069", "1504840125245554769", "1504849769845899284"],
+    roleAccess: ["1533959429697966233", "1504840125245554769", "1504849769845899284"],
     fields: [
-      { name: "realName", label: "Real Name", type: "text", required: true, placeholder: "Your real name" },
-      { name: "age", label: "Age", type: "number", required: true, placeholder: "Your age" },
-      { name: "discordTag", label: "Discord Tag", type: "text", required: true, placeholder: "username" },
-      { name: "gangName", label: "Gang Name", type: "text", required: true, placeholder: "Name of your gang" },
-      { name: "gangMembers", label: "How many members will be joining?", type: "text", required: true, placeholder: "e.g. 5-10 founding members" },
-      { name: "whyGang", label: "Why do you want to start/join a gang?", type: "textarea", required: true, placeholder: "Tell us about your gang's goals and RP..." },
-      { name: "gangConcept", label: "Gang Concept", type: "textarea", required: true, placeholder: "Describe your gang's identity, territory, and activities..." },
+      { name: "familyName", label: "Family Name", type: "text", required: true, placeholder: "Name of your family" },
+      { name: "familyMembers", label: "How many members does your family have?", type: "text", required: true, placeholder: "e.g. 5-10 founding members" },
+      { name: "leaderIG", label: "Leader Name (IG)", type: "text", required: true, placeholder: "In-game name of the leader" },
+      { name: "leaderDiscord", label: "Leader Discord", type: "text", required: true, placeholder: "Discord username of the leader" },
+      { name: "coLeaderIG", label: "Co-Leader Name (IG)", type: "text", required: true, placeholder: "In-game name of the co-leader" },
+      { name: "coLeaderDiscord", label: "Co-Leader Discord", type: "text", required: true, placeholder: "Discord username of the co-leader" },
+      { name: "membersList", label: "List all members (IG Name & Discord)", type: "textarea", required: true, placeholder: "List every member with their in-game name and Discord" },
+      { name: "backstory", label: "What is your family's backstory (Lore)?", type: "textarea", required: true, placeholder: "Tell us the story of your family..." },
+      { name: "goals", label: "What are your family's goals?", type: "textarea", required: true, placeholder: "Describe what your family wants to achieve..." },
+      { name: "rpKind", label: "What kind of RP will your family provide?", type: "textarea", required: true, placeholder: "Describe the roleplay your family will bring..." },
+      { name: "interactions", label: "How will your family interact with other factions and civilians?", type: "textarea", required: true, placeholder: "Describe how your family deals with others..." },
+      { name: "unique", label: "What makes your family unique?", type: "textarea", required: true, placeholder: "What sets your family apart?" },
+      { name: "bring", label: "What will your family bring to the server that other families don't?", type: "textarea", required: true, placeholder: "What can your family add that others can't?" },
+      { name: "rulesAgree", label: "Do all members understand and agree to follow the server rules?", type: "text", required: true, placeholder: "Yes/No" },
+      { name: "regulationsAgree", label: "Are you willing to follow staff decisions and family regulations?", type: "text", required: true, placeholder: "Yes/No" },
     ],
   },
   {
@@ -141,6 +149,12 @@ export function getDepartment(slug: string): ApplicationDepartment | undefined {
 }
 
 export function getApplicationLabels(deptSlug: string): Record<string, string> {
+  if (deptSlug === "whitelist") {
+    return Object.fromEntries(WHITELIST_FIELDS.map((f) => [f.name, f.label]));
+  }
+  if (deptSlug === "ban-appeal") {
+    return Object.fromEntries(APPEAL_FIELDS.map((f) => [f.name, f.label]));
+  }
   if (deptSlug.startsWith("staff_")) {
     const s = STAFF_APPLICATIONS.find((x) => x.slug === deptSlug.replace("staff_", ""));
     if (s) return Object.fromEntries(s.fields.map((f) => [f.name, f.label]));
@@ -202,7 +216,72 @@ export const STAFF_APPLICATIONS = [
 ];
 
 export const ROLE_IDS = {
-  WHITELISTED: "1504840081926525069",
+  WHITELISTED: "1533959429697966233",
   CHECKIN: "1504849769845899284",
   BANNED: "1504840125245554769",
 } as const;
+
+export const WHITELIST_FIELDS: ApplicationField[] = [
+  {
+    name: "Character Full Name",
+    label: "Full Name",
+    type: "text",
+    required: true,
+    placeholder: "Your character's full name"
+  },
+  {
+    name: "Character Age",
+    label: "Age",
+    type: "number",
+    required: true,
+    placeholder: "Your character's age"
+  },
+  {
+    name: "Character Alignment (Legal or Illegal)",
+    label: "Legal or Illegal",
+    type: "text",
+    required: true,
+    placeholder: "Legal or Illegal"
+  },
+  {
+    name: "Character Background",
+    label: "Character Background (Brief Description): Include the character's childhood, major life events, personal struggles, traumas, and any significant experiences that shaped their personality.\n(L passé ta3 l cha5seya b facon mokhtasra: kifesh t3addet toufoultha, chnowa l machekel wala l-traumas li t3arrdhetlhom, w chnowa aham l wa9a2e3 li athret fi hyetha.)",
+    type: "textarea",
+    required: true,
+    placeholder: "Describe your character's past..."
+  },
+  {
+    name: "Transition to the City",
+    label: "Transition to the City: Explain how the character's past led them to their current situation and what brought them to the city to begin their new journey.\n(Kifesh l passé ta3ha wasselha lel wa9t l 7adher, w chnowa li khalleha tousel lel city hedhi bech tebda l aventure mte3ha.)",
+    type: "textarea",
+    required: true,
+    placeholder: "Explain why your character came to the city..."
+  },
+  {
+    name: "Physical Description",
+    label: "Physical Description: Describe the character's appearance, including skin tone, facial features, eye color, hair color, body type, disabilities (if any), and clothing style.\n(Wasf jasadi lel cha5seya: lawn l bchra, chakl l wej, lawn l 3inin, lawn cha3r, bina2 l jism, i3a9at ken fama (samm, 3ama, bkem...), w style mte3 lbes.)",
+    type: "textarea",
+    required: true,
+    placeholder: "Describe your character's appearance..."
+  },
+  {
+    name: "Personality & Psychological Description",
+    label: "Personality & Psychological Description: Describe the character's personality traits, fears, phobias, mental health, past traumas, primary language, accent, habits, and any unique characteristics.\n(Wasf nafsi w chakhsiya: sifat chakhsiya, phobias, l7ala nafsiya, traumas, lougha l asasiya, accent, 3adat khasa, w ay haja tfarra9ha 3la ghirha.)",
+    type: "textarea",
+    required: true,
+    placeholder: "Describe your character's personality..."
+  },
+  {
+    name: "Future Goals & Ambitions",
+    label: "Future Goals & Ambitions: Briefly explain what the character hopes to achieve in the future and the objectives they will pursue throughout their story.\n(Mosta9bel l cha5seya b facon mokhtasra: chnowa ahdafha, chnowa t7eb touselou, w kifeh tchouf rou7ha ba3d.)",
+    type: "textarea",
+    required: true,
+    placeholder: "Describe your character's future goals..."
+  }
+];
+
+export const APPEAL_FIELDS: ApplicationField[] = [
+  { name: "discordTag", label: "Discord Tag", type: "text", required: true, placeholder: "username" },
+  { name: "reason", label: "Why were you banned?", type: "textarea", required: true, placeholder: "Explain the reason for your ban..." },
+  { name: "additionalInfo", label: "Why should we unban you?", type: "textarea", required: true, placeholder: "Explain why you believe you should be unbanned..." },
+];

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getApplyConfig, APPLICATION_SLUGS } from "@/lib/apply.config";
 import { getApplications } from "@/lib/applications.db";
+import { getLabelsForDept } from "@/lib/application-questions";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ dept: string }> }) {
   const roleLevel = req.headers.get("x-role-level");
@@ -14,9 +15,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ dept
   }
 
   const status = req.nextUrl.searchParams.get("status") || undefined;
+  const q = req.nextUrl.searchParams.get("q") || undefined;
   const page = parseInt(req.nextUrl.searchParams.get("page") || "1", 10);
   const limit = parseInt(req.nextUrl.searchParams.get("limit") || "20", 10);
 
-  const result = getApplications(dept, { status, page, limit });
-  return NextResponse.json(result);
+  const result = getApplications(dept, { status, page, limit, q });
+  const labels = getLabelsForDept(dept);
+  return NextResponse.json({ ...result, labels });
 }

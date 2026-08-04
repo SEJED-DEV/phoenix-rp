@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
 import { getTicketById } from "@/lib/tickets.db";
-import { getTicketType } from "@/lib/tickets.config";
+import { getTicketType, canViewTicketType } from "@/lib/tickets.config";
 import { openDm, sendMessage } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
 
@@ -24,6 +24,14 @@ export async function POST(
   const ticket = getTicketById(id);
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  const roles = session.roles || [];
+  const ticketType = getTicketType(ticket.type);
+  const canView =
+    ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  if (!canView) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const typeInfo = getTicketType(ticket.type);

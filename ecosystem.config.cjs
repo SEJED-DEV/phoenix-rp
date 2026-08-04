@@ -41,5 +41,14 @@ module.exports = {
       restart_delay: 3000,
       max_restarts: 10,
     },
+    {
+      name: "maintenance",
+      interpreter: "node",
+      script: "maintenance-server.cjs",
+      cwd: __dirname,
+      env: { NODE_ENV: "production" },
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
   ],
 };

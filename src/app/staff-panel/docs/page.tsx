@@ -129,6 +129,8 @@ const NAV = [
   { id: "dashboard", label: "The Dashboard" },
   { id: "tickets", label: "Tickets" },
   { id: "applications", label: "Applications" },
+  { id: "config", label: "Config & Questions" },
+  { id: "logs", label: "Activity Logs" },
   { id: "members", label: "Members & Punishments" },
   { id: "notifications", label: "Discord Notifications" },
   { id: "best-practices", label: "Best Practices" },
@@ -227,6 +229,11 @@ export default function StaffDocsPage() {
                       "Creator · Founder",
                       "Highest tier. Can review applications and is the final escalation point.",
                     ],
+                    [
+                      <strong key="d" className="text-white">Config access</strong>,
+                      "Management & Owner only",
+                      <>Control who can edit application questions via the <a className="text-gold hover:underline" href="#config">Config</a> page. Granted editors (individual members or whole roles) can edit questions for a specific application even if they are Staff-tier.</>,
+                    ],
                   ]}
                 />
               </Sub>
@@ -242,8 +249,8 @@ export default function StaffDocsPage() {
               <Sub title="High-rank ticket access">
                 <P>
                   Certain ticket types (Ban Appeal, Complaint, Refund, High Rank, Partnership, Donation) can only be
-                  opened by high-ranking members. Bug Report tickets are Developer-only. Staff can always view and reply
-                  to every ticket regardless of type.
+                  opened by high-ranking members. Bug Report tickets are Developer-only. Those restricted types are also
+                  only visible to high-ranking members — general Staff Team members only see General Support tickets.
                 </P>
               </Sub>
             </Section>
@@ -259,7 +266,6 @@ export default function StaffDocsPage() {
                 head={["Widget", "What it shows"]}
                 rows={[
                   ["Total Members", "The Discord server's member count."],
-                  ["Staff Online", "How many staff are online, idle, or on DND right now."],
                   ["Pending Applications", "Applications waiting for a management review."],
                   ["Open Tickets", "Tickets that have not been closed yet."],
                   ["Recent Activity", "The last 15 staff actions, logged automatically (punishments, application decisions)."],
@@ -283,7 +289,8 @@ export default function StaffDocsPage() {
               <P>
                 When a member opens a ticket, a notification is posted to the Discord tickets channel with an{" "}
                 <Inline>@here</Inline> ping, and the ticket appears in the tickets list. Anyone with the Staff Team role
-                can view and reply to any ticket.
+                can view and reply to General Support tickets; restricted ticket types are only visible to high-ranking
+                members.
               </P>
 
               <Sub title="Ticket types">
@@ -389,7 +396,7 @@ export default function StaffDocsPage() {
               id="applications"
               num="04"
               title="Applications"
-              intro="Applications are how members apply for whitelists, departments, gangs, and staff. Reviewing them requires Management tier access."
+              intro="Applications are how members apply for whitelists, departments, families, and staff. Reviewing them requires Management tier access."
             >
               <P>
                 Applications arrive through the apply pages on the site and land in the applications area of the staff
@@ -405,7 +412,7 @@ export default function StaffDocsPage() {
                     ["Police", "Law-enforcement department."],
                     ["EMS", "Emergency Medical Services."],
                     ["Mechanic", "Mechanic department."],
-                    ["Gang", "Gang applications."],
+                    ["Family", "Family applications."],
                     ["DOJ", "Department of Justice."],
                     ["Staff Team", "Applications to join the staff team."],
                     ["Ban Appeal", "Requests to lift a ban."],
@@ -454,10 +461,117 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 5. Members & Punishments ─────────────────── */}
+            {/* ── 5. Config & Questions ───────────────────── */}
+            <Section
+              id="config"
+              num="05"
+              title="Config & Questions"
+              intro="The Config page controls who can edit each application's questions, and lets you build the exact forms applicants see."
+            >
+              <P>
+                The Config page lives at <Inline>/staff-panel/config</Inline> and is restricted to{" "}
+                <strong className="text-text">Management &amp; Owner</strong>. It lists every application (Whitelist,
+                departments, Staff Team, Ban Appeal). For each one you can grant question-edit access and open the question
+                editor.
+              </P>
+
+              <Sub title="Granting editors">
+                <P>
+                  Editors can be an <strong className="text-text">individual Discord member</strong> (search by username) or
+                  a <strong className="text-text">whole Discord role</strong> (picked from a dropdown). Granting a role means
+                  every member holding that role can edit that application&apos;s questions. Revoking a grant removes the access
+                  immediately.
+                </P>
+              </Sub>
+
+              <Sub title="The question editor">
+                <P>
+                  Opening <strong className="text-text">Edit questions</strong> for an application loads its current form.
+                  You can:
+                </P>
+                <DocTable
+                  head={["Action", "How"]}
+                  rows={[
+                    ["Add a question", "Press “+ Add question”, then fill in the label and options."],
+                    ["Remove a question", "Press the × button on a question card."],
+                    ["Reorder", "Use the up / down arrows to change the order applicants see."],
+                    ["Edit label & placeholder", "Edit the text directly in the card."],
+                    ["Change the type", "Switch between Text, Textarea, Number, and Select (dropdown)."],
+                    ["Make it required / optional", "Toggle the Required checkbox."],
+                    ["Set dropdown options", "For Select questions, type one option per line."],
+                    ["Reset to defaults", "Load the original question set back (then press Save)."],
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="The question “name”">
+                <P>
+                  Every question has a <strong className="text-text">name</strong> (the key shown in monospace at the top of
+                  each card). It is the stable identifier that ties answers to past submissions. You can change the visible
+                  <em> label</em> any time, but renaming the <em>name</em> detaches that field from old answers — old
+                  applications will still show their stored text under the old key.
+                </P>
+              </Sub>
+
+              <Callout tone="info" title="Where changes take effect">
+                <p>
+                  Saved questions are live immediately: the public apply forms, the server-side required-field validation,
+                  and the labels shown in application review all read from the same database table.
+                </p>
+              </Callout>
+            </Section>
+
+            {/* ── 6. Activity Logs ─────────────────────────── */}
+            <Section
+              id="logs"
+              num="06"
+              title="Activity Logs"
+              intro="Every staff action is recorded — punishments, application decisions, ticket actions, config changes, and question edits."
+            >
+              <P>
+                The Logs page at <Inline>/staff-panel/logs</Inline> shows every recorded staff action in reverse
+                chronological order. Each log entry captures the acting staff member, the action type, the target member,
+                an optional reason, and a timestamp.
+              </P>
+
+              <Sub title="Searching and filtering">
+                <DocTable
+                  head={["Tool", "What it does"]}
+                  rows={[
+                    ["Search box", "Finds logs by actor name, target name, reason text, or the raw metadata JSON (press Enter)."],
+                    ["Action dropdown", "Filters to one action type, with a live count for each type."],
+                    ["Pagination", "50 entries per page; Previous / Next to browse."],
+                    ["Expandable rows", "Click any log to open its full metadata JSON, IDs, and exact timestamp."],
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="What gets logged">
+                <DocTable
+                  head={["Category", "Actions"]}
+                  rows={[
+                    ["Members", "Kicked, banned, unbanned, role changes, punishments issued/removed."],
+                    ["Applications", "Approvals and denials."],
+                    ["Tickets", "Assignments and closures."],
+                    ["Content", "Announcements created/deleted, staff notes added/deleted."],
+                    ["Config", "Editor grants/revokes and question updates (with a full before/after diff)."],
+                    ["Session", "Staff logins."],
+                  ]}
+                />
+              </Sub>
+
+              <Callout tone="warn" title="Logs are permanent">
+                <p>
+                  Log entries are written automatically and are not editable from the panel. If you need a log reviewed or
+                  removed, contact a Developer.
+                </p>
+              </Callout>
+            </Section>
+
+            {/* ── 7. Members & Punishments ─────────────────── */}
             <Section
               id="members"
-              num="05"
+              num="07"
               title="Members & Punishments"
               intro="The member management page lets you search the server, inspect a member's roles and existing punishments, and issue punishments."
             >
@@ -509,10 +623,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 6. Discord Notifications ─────────────────── */}
+            {/* ── 8. Discord Notifications ─────────────────── */}
             <Section
               id="notifications"
-              num="06"
+              num="08"
               title="Discord Notifications"
               intro="The site posts to a few Discord channels so the team is never blind to what is happening."
             >
@@ -534,10 +648,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 7. Best Practices ────────────────────────── */}
+            {/* ── 9. Best Practices ────────────────────────── */}
             <Section
               id="best-practices"
-              num="07"
+              num="09"
               title="Best Practices"
               intro="A short code of conduct for working on the panel. Following this keeps the team consistent and the community happy."
             >
@@ -554,8 +668,8 @@ export default function StaffDocsPage() {
               />
             </Section>
 
-            {/* ── 8. FAQ ───────────────────────────────────── */}
-            <Section id="faq" num="08" title="FAQ">
+            {/* ── 10. FAQ ──────────────────────────────────── */}
+            <Section id="faq" num="10" title="FAQ">
               <div className="space-y-4">
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
                   <p className="text-sm font-bold text-text mb-1">I can log in but the staff panel says I don't have access.</p>
@@ -569,6 +683,15 @@ export default function StaffDocsPage() {
                   <p className="text-[13px] text-text-dim leading-relaxed">
                     Applications require <strong className="text-text">Management</strong> tier access. Staff-tier members
                     see the panel but not the review area. Ask a Manager if you should have access.
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
+                  <p className="text-sm font-bold text-text mb-1">I was granted editor access but the Config page says I can&apos;t open it.</p>
+                  <p className="text-[13px] text-text-dim leading-relaxed">
+                    The Config <em>page</em> itself is Management &amp; Owner only. If you were granted as a question
+                    editor, open the editor directly from a granted link (or have a Manager open{" "}
+                    <Inline>/staff-panel/config/questions/&lt;department&gt;</Inline> for you). You&apos;ll still be able to edit
+                    questions for that department.
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">

@@ -3,7 +3,7 @@ import Departments from "@/components/Departments";
 
 export const metadata: Metadata = {
   title: "Departments — Tunisian Phoenix RP",
-  description: "Explore the departments at Tunisian Phoenix RP — Police, EMS, Gangs, Civilian, Mechanic, and Justice.",
+  description: "Explore the departments at Tunisian Phoenix RP — Police, EMS, Families, Civilian, Mechanic, and Justice.",
 };
 
 export default function DepartmentsPage() {

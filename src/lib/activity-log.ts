@@ -16,7 +16,10 @@ export type StaffAction =
   | "note_create"
   | "note_delete"
   | "config_update"
-  | "login";
+  | "login"
+  | "app_config_editor_add"
+  | "app_config_editor_remove"
+  | "application_questions_update";
 
 interface LogEntry {
   actorId: string;
@@ -79,4 +82,53 @@ export function getLogCount(action?: string): number {
   }
   const row = db.prepare("SELECT COUNT(*) as count FROM staff_logs").get() as { count: number };
   return row.count;
+}
+
+export function searchLogs(opts: { action?: string; q?: string; limit?: number; offset?: number } = {}): {
+  logs: LogRow[];
+  total: number;
+} {
+  const db = getDb();
+  const where: string[] = [];
+  const params: unknown[] = [];
+
+  if (opts.action) {
+    where.push("action = ?");
+    params.push(opts.action);
+  }
+  if (opts.q && opts.q.trim()) {
+    where.push("(actorName LIKE ? OR targetName LIKE ? OR reason LIKE ? OR metadata LIKE ?)");
+    const like = `%${opts.q.trim()}%`;
+    params.push(like, like, like, like);
+  }
+
+  const whereSql = where.length ? `WHERE ${where.join(" AND ")}` : "";
+  const limit = Math.max(1, Math.min(opts.limit ?? 50, 200));
+  const offset = Math.max(0, opts.offset ?? 0);
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as c FROM staff_logs ${whereSql}`).get(...params) as { c: number }
+  ).c;
+
+  const logs = db
+    .prepare(`SELECT * FROM staff_logs ${whereSql} ORDER BY id DESC LIMIT ? OFFSET ?`)
+    .all(...params, limit, offset) as LogRow[];
+
+  return { logs, total };
+}
+
+export function getLogStats(): { total: number; thisWeek: number; byAction: Record<string, number> } {
+  const db = getDb();
+  const total = (db.prepare("SELECT COUNT(*) as c FROM staff_logs").get() as { c: number }).c;
+  const thisWeek = (
+    db
+      .prepare("SELECT COUNT(*) as c FROM staff_logs WHERE createdAt >= datetime('now', '-7 days')")
+      .get() as { c: number }
+  ).c;
+  const rows = db
+    .prepare("SELECT action, COUNT(*) as c FROM staff_logs GROUP BY action ORDER BY c DESC")
+    .all() as { action: string; c: number }[];
+  const byAction: Record<string, number> = {};
+  for (const r of rows) byAction[r.action] = r.c;
+  return { total, thisWeek, byAction };
 }

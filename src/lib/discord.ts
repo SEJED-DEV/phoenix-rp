@@ -2,13 +2,14 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 
 export const ROLES = {
-  WHITELISTED: "1504840081926525069",
+  WHITELISTED: "1533959429697966233",
   CHECKIN: "1504849769845899284",
   BANNED: "1504840125245554769",
   BLACKLISTED: "1504840125690155191",
   STAFF: "1504840075945443513",
 } as const;
 
+export const WHITELIST_INTERVIEW_ROLE = "1504855389223522384";
 export const PUNISHMENT_ROLES = [
   { id: "1504840115263115375", name: "Warn 1", color: "#f87171", severity: 1 },
   { id: "1504840113467953173", name: "Warn 2", color: "#ef4444", severity: 2 },
@@ -21,7 +22,7 @@ export const PUNISHMENT_ROLES = [
 
 export const ROLE_NAMES: Record<string, string> = {
   [ROLES.STAFF]: "Staff",
-  [ROLES.WHITELISTED]: "Whitelisted",
+  [ROLES.WHITELISTED]: "🔑 | Whitelisted S2",
   [ROLES.CHECKIN]: "Check-in",
   [ROLES.BANNED]: "Banned",
   [ROLES.BLACKLISTED]: "Blacklisted",
@@ -361,64 +362,19 @@ export async function sendDmContainer(userId: string, components: unknown[]): Pr
   return sendContainer(dmId, components);
 }
 
-interface StaffWithPresence {
-  userId: string;
-  username: string;
-  avatar: string;
-  roles: string[];
-  online: boolean;
-}
-
-export async function getStaffWithPresence(): Promise<StaffWithPresence[]> {
-  try {
-    console.log("[discord] Fetching staff with presence");
-    let allMembers: {
-      roles: string[];
-      user: { id: string; username: string; avatar: string };
-      presence?: { status: string };
-    }[] = [];
-    let after = "0";
-
-    while (true) {
-      const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}&with_counts=true`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bot ${BOT_TOKEN}` },
-      });
-      if (!res.ok) break;
-      const batch = await res.json();
-      if (batch.length === 0) break;
-      allMembers = allMembers.concat(batch);
-      after = batch[batch.length - 1].user.id;
-      if (batch.length < 1000) break;
-    }
-
-    const staff: StaffWithPresence[] = allMembers
-      .filter((m) => {
-        if (!m.user) return false;
-        return m.roles.includes(ROLES.STAFF);
-      })
-      .map((m) => ({
-        userId: m.user.id,
-        username: m.user.username,
-        avatar: m.user.avatar
-          ? `https://cdn.discordapp.com/avatars/${m.user.id}/${m.user.avatar}.png?size=128`
-          : `https://cdn.discordapp.com/embed/avatars/${parseInt(m.user.id) % 5}.png`,
-        roles: m.roles,
-        online: m.presence?.status === "online" || m.presence?.status === "idle" || m.presence?.status === "dnd",
-      }));
-
-    console.log(`[discord] Staff with presence: ${staff.length} total, ${staff.filter((s) => s.online).length} online`);
-    return staff;
-  } catch (e) {
-    console.error("[discord] getStaffWithPresence exception:", e);
-    return [];
-  }
-}
-
 interface RawMember {
   roles: string[];
   user: { id: string; username: string; avatar: string };
-  presence?: { status: string };
+}
+
+export async function getStaffCount(): Promise<number> {
+  try {
+    const members = await fetchAllMembers();
+    return members.filter((m) => m.user && m.roles.includes(ROLES.STAFF)).length;
+  } catch (e) {
+    console.error("[discord] getStaffCount exception:", e);
+    return 0;
+  }
 }
 
 async function fetchAllMembers(): Promise<RawMember[]> {

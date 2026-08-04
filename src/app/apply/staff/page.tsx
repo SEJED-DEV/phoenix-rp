@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
-import { STAFF_APPLICATIONS } from "@/lib/applications.data";
+import { STAFF_APPLICATIONS, type ApplicationField } from "@/lib/applications.data";
+import FormFields from "@/components/FormFields";
 import PageSkeleton from "@/components/PageSkeleton";
 
 const STAFF_IMAGES = [
@@ -19,6 +20,7 @@ export default function StaffApplyPage() {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<ApplicationField[]>(app?.fields || []);
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [heroImage, setHeroImage] = useState("/media/departments/staff.png");
@@ -28,6 +30,20 @@ export default function StaffApplyPage() {
     setHeroImage(STAFF_IMAGES[Math.floor(Math.random() * STAFF_IMAGES.length)]);
     setDiscordUrl(getDiscordLoginUrl());
   }, []);
+
+  useEffect(() => {
+    if (!app?.slug) return;
+    let cancelled = false;
+    fetch(`/api/apply/questions?dept=${encodeURIComponent(`staff_${app.slug}`)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((q: ApplicationField[] | null) => {
+        if (!cancelled && q) setFields(q);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [app?.slug]);
 
   useEffect(() => {
     const el = ref.current;
@@ -153,9 +169,6 @@ export default function StaffApplyPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const inputClass = "w-full px-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-text placeholder:text-text-dim/50 focus:outline-none focus:border-crimson/40 focus:bg-white/[0.06] transition-all text-sm";
-  const labelClass = "block text-sm font-medium text-text-muted mb-2";
-
   return (
     <section ref={ref} className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 -z-10">
@@ -203,42 +216,11 @@ export default function StaffApplyPage() {
             transition: "all 1s cubic-bezier(0.16,1,0.3,1) 0.3s",
           }}
         >
-          {app?.fields.map((field) => (
-            <div key={field.name}>
-              <label className={labelClass}>{field.label}</label>
-              {field.type === "textarea" ? (
-                <textarea
-                  required={field.required}
-                  rows={3}
-                  className={inputClass}
-                  placeholder={field.placeholder}
-                  value={form[field.name] || ""}
-                  onChange={(e) => setField(field.name, e.target.value)}
-                />
-              ) : field.type === "select" ? (
-                <select
-                  required={field.required}
-                  className={inputClass}
-                  value={form[field.name] || ""}
-                  onChange={(e) => setField(field.name, e.target.value)}
-                >
-                  <option value="">Select...</option>
-                  {field.options?.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              ) : (
-                <input
-                  type={field.type}
-                  required={field.required}
-                  className={inputClass}
-                  placeholder={field.placeholder}
-                  value={form[field.name] || ""}
-                  onChange={(e) => setField(field.name, e.target.value)}
-                />
-              )}
-            </div>
-          ))}
+          {fields.length === 0 ? (
+            <p className="text-text-muted text-sm">No questions configured yet — try again later.</p>
+          ) : (
+            <FormFields fields={fields} form={form} setField={setField} />
+          )}
 
           <button
             type="submit"

@@ -259,11 +259,11 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Departments & Gangs */}
+        {/* Departments & Families */}
         {profile.departments.length > 0 && (
           <div className="mb-6">
             <h2 className="font-display text-sm tracking-[0.15em] uppercase text-text-muted mb-3">
-              {profile.departments.some((d) => d.type === "gang") ? "Departments & Gangs" : "Departments"}
+              {profile.departments.some((d) => d.type === "gang") ? "Departments & Families" : "Departments"}
             </h2>
             <div className="flex flex-wrap gap-2">
               {profile.departments.map((dept) => (

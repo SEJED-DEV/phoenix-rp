@@ -42,6 +42,7 @@ const PRIORITY_OPTIONS = [
 const ROLE_BADGES: Record<string, string> = {
   Staff: "bg-crimson/15 text-crimson border-crimson/30",
   Whitelisted: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
+  "🔑 | Whitelisted S2": "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
   "Check-in": "bg-amber-500/10 text-amber-400 border-amber-500/25",
 };
 

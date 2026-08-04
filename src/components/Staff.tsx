@@ -120,7 +120,7 @@ export default function Staff() {
   useEffect(() => {
     const fetchStaff = async () => {
       try {
-        const res = await fetch("/api/staff");
+        const res = await fetch("/api/public/staff");
         if (res.ok) {
           const data = await res.json();
           setMembers(data);
