@@ -29,6 +29,30 @@ export interface TicketMessage {
   createdAt: string;
 }
 
+export interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  messageId: string | null;
+  uploaderId: string;
+  uploaderName: string;
+  fileName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
+export interface NewAttachmentInput {
+  ticketId: string;
+  messageId?: string | null;
+  uploaderId: string;
+  uploaderName: string;
+  fileName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+}
+
 export interface CreateTicketInput {
   userId: string;
   username: string;
@@ -168,4 +192,49 @@ export function getTicketMessagesPaginated(
     .all(ticketId, limit, offset) as TicketMessage[];
 
   return { messages, total: countRow.count };
+}
+
+export function addTicketAttachment(input: NewAttachmentInput): TicketAttachment {
+  const db = getDb();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  db.prepare(`
+    INSERT INTO ticket_attachments (id, ticketId, messageId, uploaderId, uploaderName, fileName, storedName, mimeType, size, createdAt)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `).run(
+    id,
+    input.ticketId,
+    input.messageId || null,
+    input.uploaderId,
+    input.uploaderName,
+    input.fileName,
+    input.storedName,
+    input.mimeType,
+    input.size,
+    now
+  );
+
+  return db.prepare("SELECT * FROM ticket_attachments WHERE id = ?").get(id) as TicketAttachment;
+}
+
+export function getTicketAttachments(ticketId: string): TicketAttachment[] {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM ticket_attachments WHERE ticketId = ? ORDER BY createdAt ASC")
+    .all(ticketId) as TicketAttachment[];
+}
+
+export function getAttachmentById(id: string): TicketAttachment | null {
+  const db = getDb();
+  const row = db.prepare("SELECT * FROM ticket_attachments WHERE id = ?").get(id) as TicketAttachment | undefined;
+  return row || null;
+}
+
+export function getInternalMessageIds(ticketId: string): Set<string> {
+  const db = getDb();
+  const rows = db.prepare("SELECT id FROM ticket_messages WHERE ticketId = ? AND isInternal = 1").all(ticketId) as {
+    id: string;
+  }[];
+  return new Set(rows.map((r) => r.id));
 }

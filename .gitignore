@@ -44,6 +44,9 @@ next-env.d.ts
 /data/tickets.db-shm
 /data/tickets.db-wal
 
+# kill-switch runtime state (contains the wipe token)
+/scripts/.killswitch-state.json
+
 
 # unreferenced local dump folder (338MB duplicates)
 /Gallery files/

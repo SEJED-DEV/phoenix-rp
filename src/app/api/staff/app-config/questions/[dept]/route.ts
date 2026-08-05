@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRoleLevel } from "@/lib/permissions";
+import { getRoleLevel, getUserRolesFromHeaders } from "@/lib/permissions";
 import { getApplyConfig } from "@/lib/apply.config";
 import {
   FIELD_TYPES,
@@ -12,15 +12,14 @@ import {
   updateQuestions,
   type QuestionDiff,
 } from "@/lib/application-questions";
-import { getUserRoles } from "@/lib/discord";
 import { logStaffAction } from "@/lib/activity-log";
 import type { ApplicationField } from "@/lib/applications.data";
 
-async function isAllowed(req: NextRequest, dept: string): Promise<boolean> {
+function isAllowed(req: NextRequest, dept: string): boolean {
   const level = getRoleLevel(req.headers);
   if (isHighRank(level)) return true;
   const userId = req.headers.get("x-user-id") || "";
-  const roles = await getUserRoles(userId);
+  const roles = getUserRolesFromHeaders(req.headers);
   return canEditQuestions(userId, roles, dept);
 }
 
@@ -29,7 +28,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ dept
   if (!isApplicableSlug(dept)) {
     return NextResponse.json({ error: "Invalid department" }, { status: 400 });
   }
-  if (!(await isAllowed(req, dept))) {
+  if (!isAllowed(req, dept)) {
     return NextResponse.json({ error: "You don't have permission to edit these questions" }, { status: 403 });
   }
 
@@ -61,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ dept
   if (!isApplicableSlug(dept)) {
     return NextResponse.json({ error: "Invalid department" }, { status: 400 });
   }
-  if (!(await isAllowed(req, dept))) {
+  if (!isAllowed(req, dept)) {
     return NextResponse.json({ error: "You don't have permission to edit these questions" }, { status: 403 });
   }
 

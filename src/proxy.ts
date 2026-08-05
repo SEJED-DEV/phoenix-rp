@@ -123,6 +123,7 @@ export async function proxy(req: NextRequest) {
     headers.set("x-user-id", userId);
     headers.set("x-user-name", username);
     headers.set("x-role-level", roleLevel);
+    headers.set("x-user-roles", roles.join(","));
 
     const response = NextResponse.next({ request: { headers } });
     response.headers.set("X-Robots-Tag", "noindex, nofollow");

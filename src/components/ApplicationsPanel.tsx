@@ -95,7 +95,7 @@ export default function ApplicationsPanel() {
           </svg>
         </div>
         <h1 className="font-display text-3xl tracking-wider text-white mb-3">Access Denied</h1>
-        <p className="text-text-muted text-sm">You need management permissions to review applications.</p>
+        <p className="text-text-muted text-sm">You don&apos;t have access to any applications. Ask a Manager to grant you review access in Config.</p>
       </div>
     );
   }

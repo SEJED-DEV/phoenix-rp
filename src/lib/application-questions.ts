@@ -189,6 +189,83 @@ export function canEditQuestions(userId: string, userRoles: string[], dept: stri
   );
 }
 
+// ─── Application viewer grants ───
+
+export interface ViewerRow {
+  dept: string;
+  granteeType: string;
+  granteeId: string;
+  granteeName: string;
+  grantedBy: string;
+  grantedByUser: string;
+  grantedAt: string;
+}
+
+export function getViewersForDept(dept: string): ViewerRow[] {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM application_viewers WHERE dept = ? ORDER BY grantedAt DESC")
+    .all(dept) as ViewerRow[];
+}
+
+export function getAllViewers(): Record<string, ViewerRow[]> {
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT * FROM application_viewers ORDER BY dept, grantedAt DESC")
+    .all() as ViewerRow[];
+  const map: Record<string, ViewerRow[]> = {};
+  for (const r of rows) {
+    if (!map[r.dept]) map[r.dept] = [];
+    map[r.dept].push(r);
+  }
+  return map;
+}
+
+export function addViewer(opts: {
+  dept: string;
+  granteeType: "member" | "role";
+  granteeId: string;
+  granteeName: string;
+  grantedBy: string;
+  grantedByUser: string;
+}): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO application_viewers (dept, granteeType, granteeId, granteeName, grantedBy, grantedByUser, grantedAt)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(dept, granteeType, granteeId) DO UPDATE SET
+      granteeName = excluded.granteeName,
+      grantedBy = excluded.grantedBy,
+      grantedByUser = excluded.grantedByUser,
+      grantedAt = excluded.grantedAt
+  `).run(
+    opts.dept,
+    opts.granteeType,
+    opts.granteeId,
+    opts.granteeName,
+    opts.grantedBy,
+    opts.grantedByUser,
+  );
+}
+
+export function removeViewer(dept: string, granteeType: string, granteeId: string): void {
+  const db = getDb();
+  db.prepare(
+    "DELETE FROM application_viewers WHERE dept = ? AND granteeType = ? AND granteeId = ?"
+  ).run(dept, granteeType, granteeId);
+}
+
+export function canViewApplications(userId: string, userRoles: string[], dept: string): boolean {
+  const viewers = getViewersForDept(dept);
+  return viewers.some((v) =>
+    v.granteeType === "member" ? v.granteeId === userId : userRoles.includes(v.granteeId)
+  );
+}
+
+export function getViewableDepts(userId: string, userRoles: string[], slugs: readonly string[]): string[] {
+  return slugs.filter((slug) => canViewApplications(userId, userRoles, slug));
+}
+
 // ─── Question updates ───
 
 export function updateQuestions(opts: {

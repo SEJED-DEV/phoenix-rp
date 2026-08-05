@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
-import { createTicket, getTicketsByUser, getAllTickets, hasOpenTicketOfType } from "@/lib/tickets.db";
+import { createTicket, getTicketsByUser, getAllTickets, hasOpenTicketOfType, type TicketAttachment } from "@/lib/tickets.db";
 import { getTicketType, getAvailableTicketTypes, canViewTicketType } from "@/lib/tickets.config";
 import { sendTicketNotification } from "@/lib/tickets.webhook";
 import { getHighestRole } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
+import { validateUploadFiles, saveTicketAttachments, type UploadFile } from "@/lib/ticket-uploads";
+
+function getUploadedFiles(form: FormData): UploadFile[] {
+  return (form.getAll("files") || []).filter((f): f is File => typeof f !== "string");
+}
 
 export async function GET(_req: NextRequest) {
   const session = await ensureSessionRoles();
@@ -33,8 +38,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = await req.json();
-  const { type, subject, description } = body;
+  let form: FormData;
+  try {
+    form = await req.formData();
+  } catch {
+    return NextResponse.json({ error: "Invalid upload" }, { status: 400 });
+  }
+
+  const type = String(form.get("type") || "");
+  const subject = String(form.get("subject") || "");
+  const description = String(form.get("description") || "");
 
   if (!type || !subject || !description) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -58,6 +71,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "You already have an open ticket of this type. Close it before opening a new one." }, { status: 409 });
   }
 
+  const files = getUploadedFiles(form);
+  const fileError = validateUploadFiles(files);
+  if (fileError) {
+    return NextResponse.json({ error: fileError }, { status: 400 });
+  }
+
   const ticket = createTicket({
     userId: session.userId,
     username: session.username,
@@ -68,9 +87,15 @@ export async function POST(req: NextRequest) {
     userRole: getHighestRole(session.roles) || undefined,
   });
 
+  let attachments: TicketAttachment[] = [];
+  if (files.length > 0) {
+    const result = await saveTicketAttachments(ticket.id, session.userId, session.username, files, null);
+    attachments = result.attachments;
+  }
+
   const ticketUrl = `${getSiteUrl()}/tickets?id=${ticket.id}`;
 
   sendTicketNotification(ticket, ticketUrl);
 
-  return NextResponse.json({ ticket }, { status: 201 });
+  return NextResponse.json({ ticket, attachments }, { status: 201 });
 }

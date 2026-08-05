@@ -65,6 +65,22 @@ export function getDb(): Database.Database {
     )
   `);
 
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS ticket_attachments (
+      id TEXT PRIMARY KEY,
+      ticketId TEXT NOT NULL,
+      messageId TEXT DEFAULT NULL,
+      uploaderId TEXT NOT NULL,
+      uploaderName TEXT NOT NULL,
+      fileName TEXT NOT NULL,
+      storedName TEXT NOT NULL,
+      mimeType TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (ticketId) REFERENCES tickets(id) ON DELETE CASCADE
+    )
+  `);
+
   // ─── Staff Panel Tables ───
 
   _db.exec(`
@@ -157,6 +173,32 @@ export function getDb(): Database.Database {
       grantedByUser TEXT,
       grantedAt TEXT NOT NULL DEFAULT (datetime('now')),
       PRIMARY KEY (dept, granteeType, granteeId)
+    )
+  `);
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS application_viewers (
+      dept TEXT NOT NULL,
+      granteeType TEXT NOT NULL,
+      granteeId TEXT NOT NULL,
+      granteeName TEXT NOT NULL DEFAULT '',
+      grantedBy TEXT,
+      grantedByUser TEXT,
+      grantedAt TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (dept, granteeType, granteeId)
+    )
+  `);
+
+  // ─── FAQ Questions ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS faq_questions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      question TEXT NOT NULL,
+      answer TEXT NOT NULL,
+      position INTEGER NOT NULL DEFAULT 0,
+      updatedBy TEXT,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 

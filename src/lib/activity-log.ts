@@ -19,7 +19,10 @@ export type StaffAction =
   | "login"
   | "app_config_editor_add"
   | "app_config_editor_remove"
-  | "application_questions_update";
+  | "application_viewer_add"
+  | "application_viewer_remove"
+  | "application_questions_update"
+  | "faq_update";
 
 interface LogEntry {
   actorId: string;

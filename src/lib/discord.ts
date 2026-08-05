@@ -41,6 +41,8 @@ export function getHighestRole(userRoles: string[]): string | null {
 export interface MemberInfo {
   roles: string[];
   joinedAt: string;
+  username?: string;
+  avatar?: string;
 }
 
 async function fetchMember(userId: string): Promise<MemberInfo | null> {
@@ -59,6 +61,8 @@ async function fetchMember(userId: string): Promise<MemberInfo | null> {
     const data: MemberInfo = {
       roles: member.roles || [],
       joinedAt: member.joined_at || "",
+      username: member.user?.username || undefined,
+      avatar: member.user?.avatar || undefined,
     };
     console.log(`[discord] Member info for ${userId}:`, data);
     return data;

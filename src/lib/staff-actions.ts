@@ -23,6 +23,8 @@ export const ACTION_META: Record<string, ActionMeta> = {
   login: { label: "Logged In", color: "#94a3b8", description: "A staff member signed in." },
   app_config_editor_add: { label: "Editor Granted", color: "#34d399", description: "A member or role was granted permission to edit an application's questions." },
   app_config_editor_remove: { label: "Editor Revoked", color: "#f87171", description: "A member or role lost permission to edit an application's questions." },
+  application_viewer_add: { label: "Viewer Granted", color: "#c084fc", description: "A member or role was granted permission to view an application's submissions." },
+  application_viewer_remove: { label: "Viewer Revoked", color: "#f87171", description: "A member or role lost permission to view an application's submissions." },
   application_questions_update: { label: "Questions Updated", color: "#fbbf24", description: "An application's questions were edited." },
 };
 

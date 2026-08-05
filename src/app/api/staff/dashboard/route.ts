@@ -2,16 +2,38 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { getGuildMemberCount, getStaffCount } from "@/lib/discord";
 import { countPendingApplications, countAllApplications } from "@/lib/applications.db";
+import { getRoleLevel, getUserRolesFromHeaders } from "@/lib/permissions";
+import {
+  canEditQuestions,
+  getViewableDepts,
+  isHighRank,
+} from "@/lib/application-questions";
+import { ON_SITE_APPLICATIONS } from "@/lib/apply.config";
 
 export async function GET(req: NextRequest) {
   try {
-    const roleLevel = req.headers.get("x-role-level") || "staff";
+    const roleLevel = getRoleLevel(req.headers);
+    const userId = req.headers.get("x-user-id") || "";
+    const roles = getUserRolesFromHeaders(req.headers);
+    const isAdmin = isHighRank(roleLevel);
+
+    const viewable = isAdmin
+      ? ON_SITE_APPLICATIONS
+      : getViewableDepts(userId, roles, ON_SITE_APPLICATIONS);
+    const canReviewApplications = isAdmin || viewable.length > 0;
+    const canEditQuestionsFlag =
+      isAdmin || ON_SITE_APPLICATIONS.some((slug) => canEditQuestions(userId, roles, slug));
+
     const db = getDb();
 
     const totalMembers = await getGuildMemberCount();
     const staffTotal = await getStaffCount();
 
-    const pendingApplications = countPendingApplications();
+    const allCounts = countAllApplications();
+    const scopedCounts = isAdmin ? allCounts : allCounts.filter((d) => viewable.includes(d.slug));
+    const pendingApplications = isAdmin
+      ? countPendingApplications()
+      : scopedCounts.reduce((sum, d) => sum + d.pending, 0);
 
     const openTickets = db.prepare(
       "SELECT COUNT(*) as count FROM tickets WHERE status IN ('open', 'in-progress')"
@@ -30,12 +52,12 @@ export async function GET(req: NextRequest) {
     ).all();
 
     const pendingByDept =
-      roleLevel === "staff"
-        ? []
-        : countAllApplications()
+      canReviewApplications
+        ? scopedCounts
             .filter((d) => d.pending > 0)
             .sort((a, b) => b.pending - a.pending)
-            .map((d) => ({ slug: d.slug, label: d.label, pending: d.pending }));
+            .map((d) => ({ slug: d.slug, label: d.label, pending: d.pending }))
+        : [];
 
     const recentTickets = db.prepare(
       "SELECT id, subject, username, priority, createdAt FROM tickets WHERE status IN ('open', 'in-progress') ORDER BY updatedAt DESC LIMIT 5"
@@ -61,6 +83,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       roleLevel,
+      canReviewApplications,
+      canEditQuestions: canEditQuestionsFlag,
       totalMembers,
       staffTotal,
       pendingApplications,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { type TicketType, getTicketTypeStyle } from "@/lib/tickets.config";
 
 interface TicketFormProps {
@@ -10,12 +10,30 @@ interface TicketFormProps {
   onCancel: () => void;
 }
 
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 export default function TicketForm({ availableTypes, openTicketTypes = [], onSuccess, onCancel }: TicketFormProps) {
   const [type, setType] = useState("");
   const [subject, setSubject] = useState("");
   const [description, setDescription] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(e.target.files || []);
+    setFiles((prev) => [...prev, ...selected].slice(0, 8));
+    e.target.value = "";
+  };
+
+  const removeFile = (index: number) => {
+    setFiles((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,10 +41,15 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
     setSubmitting(true);
 
     try {
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("subject", subject);
+      formData.append("description", description);
+      for (const f of files) formData.append("files", f);
+
       const res = await fetch("/api/tickets", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, subject, description }),
+        body: formData,
       });
 
       const data = await res.json();
@@ -142,6 +165,54 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
               maxLength={2000}
             />
             <div className="text-right text-xs text-text-muted mt-1">{description.length}/2000</div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-text-muted uppercase tracking-wider mb-2">
+              Attachments
+            </label>
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-dashed border-white/[0.12] text-text-muted text-sm hover:border-crimson/40 hover:text-text transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              Add files or images
+              <span className="text-[10px] text-text-muted/50">(10MB max each, up to 8)</span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.txt,.md,.log,.zip,.rar,.json,.csv,.mp4,.webm,.mov,.mp3,.wav,.ogg"
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            {files.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {files.map((f, i) => (
+                  <div
+                    key={`${f.name}-${i}`}
+                    className="flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03]"
+                  >
+                    <span className="text-[11px] text-text truncate max-w-[140px]">{f.name}</span>
+                    <span className="text-[9px] text-text-muted/50 shrink-0">{formatBytes(f.size)}</span>
+                    <button
+                      type="button"
+                      onClick={() => removeFile(i)}
+                      aria-label={`Remove ${f.name}`}
+                      className="w-5 h-5 flex items-center justify-center rounded text-text-muted hover:text-crimson hover:bg-white/[0.06] transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex gap-3 pt-2">

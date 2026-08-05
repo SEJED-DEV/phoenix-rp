@@ -1,27 +1,30 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRoleLevel } from "@/lib/permissions";
+import { getRoleLevel, getUserRolesFromHeaders } from "@/lib/permissions";
 import { ON_SITE_APPLICATIONS, getApplyConfig } from "@/lib/apply.config";
 import {
   getAllEditors,
+  getAllViewers,
   canEditQuestions,
   isHighRank,
 } from "@/lib/application-questions";
-import { getGuildRoles, getUserRoles } from "@/lib/discord";
+import { getGuildRoles } from "@/lib/discord";
 
 export async function GET(req: NextRequest) {
   const level = getRoleLevel(req.headers);
   const userId = req.headers.get("x-user-id") || "";
+  const isAdmin = isHighRank(level);
 
   let roles: string[] = [];
-  if (!isHighRank(level)) {
-    roles = await getUserRoles(userId);
+  if (!isAdmin) {
+    roles = getUserRolesFromHeaders(req.headers);
   }
 
   const editors = getAllEditors();
+  const viewers = getAllViewers();
   const depts = ON_SITE_APPLICATIONS.map((slug) => ({
     slug,
     label: getApplyConfig(slug)?.label ?? slug,
-    editableByMe: isHighRank(level) ? true : canEditQuestions(userId, roles, slug),
+    editableByMe: isAdmin ? true : canEditQuestions(userId, roles, slug),
   }));
 
   const guildRoles = await getGuildRoles();
@@ -30,5 +33,5 @@ export async function GET(req: NextRequest) {
     .sort((a, b) => b.position - a.position)
     .map((r) => ({ id: r.id, name: r.name }));
 
-  return NextResponse.json({ depts, editors, roles: roleList });
+  return NextResponse.json({ depts, editors, viewers, roles: roleList, isHighRank: isAdmin });
 }

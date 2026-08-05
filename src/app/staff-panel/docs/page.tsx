@@ -232,7 +232,12 @@ export default function StaffDocsPage() {
                     [
                       <strong key="d" className="text-white">Config access</strong>,
                       "Management & Owner only",
-                      <>Control who can edit application questions via the <a className="text-gold hover:underline" href="#config">Config</a> page. Granted editors (individual members or whole roles) can edit questions for a specific application even if they are Staff-tier.</>,
+                      <>Control who can edit application questions and who can review applications via the <a className="text-gold hover:underline" href="#config">Config</a> page. Granted editors (individual members or whole roles) can edit questions for a specific application even if they are Staff-tier.</>,
+                    ],
+                    [
+                      <strong key="e" className="text-white">Application reviewer</strong>,
+                      "Any Staff Team member granted access in Config",
+                      <>Can <em>view</em> the applications of a department a Manager has granted them. Reviewers can read submissions but <strong className="text-text">cannot approve or deny</strong> — decisions stay with Management &amp; Owner.</>,
                     ],
                   ]}
                 />
@@ -241,8 +246,10 @@ export default function StaffDocsPage() {
               <Callout tone="info" title="One rule of thumb">
                 <p>
                   If you hold the <strong className="text-text">Staff Team</strong> role you can use the panel. Management
-                  and Owner tiers add application review on top. If a page says “Access denied”, it usually means you are
-                  a Staff member trying to review applications — ask a Manager.
+                  and Owner tiers add application review on top. If a Manager grants you access as an <em>application
+                  reviewer</em>, you can read a department&apos;s applications but decisions remain with Management. If a
+                  page says “Access denied”, it usually means you are a Staff member trying to review applications without
+                  a grant — ask a Manager.
                 </p>
               </Callout>
 
@@ -401,8 +408,29 @@ export default function StaffDocsPage() {
               <P>
                 Applications arrive through the apply pages on the site and land in the applications area of the staff
                 panel. When a new application is submitted, a notification is posted to the Discord applications channel.
-                If you cannot see the applications page, you do not have Management access.
+                Management and Owner tiers can review every application; Staff-tier members can only see a department&apos;s
+                applications if a Manager has granted them access (see below).
               </P>
+
+              <Sub title="Who can see applications">
+                <DocTable
+                  head={["Access", "What you can do"]}
+                  rows={[
+                    [
+                      <strong key="m" className="text-white">Management &amp; Owner</strong>,
+                      <>See and review all applications — approve, deny, and add review notes.</>,
+                    ],
+                    [
+                      <strong key="v" className="text-white">Application reviewer</strong>,
+                      <>Staff members a Manager granted in <a className="text-gold hover:underline" href="#config">Config</a>. They can open a department&apos;s queue and read individual applications, but the review buttons are hidden — they cannot approve or deny.</>,
+                    ],
+                  ]}
+                />
+                <P>
+                  A reviewer only sees the departments they were granted. The applications summary only shows those
+                  departments, so their panel never exposes the rest.
+                </P>
+              </Sub>
 
               <Sub title="What people can apply for">
                 <DocTable
@@ -471,8 +499,8 @@ export default function StaffDocsPage() {
               <P>
                 The Config page lives at <Inline>/staff-panel/config</Inline> and is restricted to{" "}
                 <strong className="text-text">Management &amp; Owner</strong>. It lists every application (Whitelist,
-                departments, Staff Team, Ban Appeal). For each one you can grant question-edit access and open the question
-                editor.
+                departments, Staff Team, Ban Appeal). For each one you can grant question-edit access, grant application
+                reviewers, and open the question editor.
               </P>
 
               <Sub title="Granting editors">
@@ -482,6 +510,21 @@ export default function StaffDocsPage() {
                   every member holding that role can edit that application&apos;s questions. Revoking a grant removes the access
                   immediately.
                 </P>
+              </Sub>
+
+              <Sub title="Granting application reviewers">
+                <P>
+                  Each application card also has an <strong className="text-text">Application Reviewers</strong> section.
+                  Granting a member or role there lets them <em>view</em> that application&apos;s submissions — the queue and
+                  individual applications appear in their Applications page, but only for departments you grant them.
+                </P>
+                <Callout tone="warn" title="Viewers see everything for that department">
+                  <p>
+                    Reviewers can read the full submission and every applicant&apos;s Discord profile. Only grant people you
+                    trust, and remember: reviewers can never approve or deny — decisions stay with Management &amp; Owner.
+                    Reviewer grants are logged in the activity feed, just like editor grants.
+                  </p>
+                </Callout>
               </Sub>
 
               <Sub title="The question editor">

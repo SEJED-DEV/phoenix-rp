@@ -18,3 +18,12 @@ export function hasPermission(userLevel: string, requiredLevel: RoleLevel): bool
 export function getRoleLevel(headers: Headers): string {
   return headers.get("x-role-level") || "staff";
 }
+
+export function getUserRolesFromHeaders(headers: Headers): string[] {
+  const raw = headers.get("x-user-roles");
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}

@@ -7,6 +7,8 @@ import { getActionMeta } from "@/lib/staff-actions";
 
 interface DashboardData {
   roleLevel: string;
+  canReviewApplications: boolean;
+  canEditQuestions: boolean;
   totalMembers: number;
   staffTotal: number;
   pendingApplications: number;
@@ -205,7 +207,6 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
   }
 
   const tier = ROLE_META[roleLevel || data.roleLevel || "staff"] ?? ROLE_META.staff;
-  const isManagement = tier.accent !== ROLE_META.staff.accent;
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const trendMax = Math.max(...data.activityTrend.map((t) => t.count), 1);
 
@@ -286,7 +287,7 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
           icon={ICONS.document}
           accent="#f97316"
           sub="awaiting review"
-          href={isManagement ? "/staff-panel/applications" : undefined}
+          href={data.canReviewApplications ? "/staff-panel/applications" : undefined}
         />
         <StatCard
           label="Open Tickets"
@@ -305,7 +306,7 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
             title="Needs Attention"
             badge={`${data.pendingApplications} apps · ${data.openTickets} tickets`}
             right={
-              isManagement && data.pendingApplications > 0 ? (
+              data.canReviewApplications && data.pendingApplications > 0 ? (
                 <Link href="/staff-panel/applications" className="text-[11px] text-text-muted hover:text-crimson transition-colors tracking-wide">Review all</Link>
               ) : undefined
             }
@@ -317,9 +318,9 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
                   <path strokeLinecap="round" strokeLinejoin="round" d={ICONS.document} />
                 </svg>
                 Pending Applications
-                {!isManagement && <span className="px-1.5 py-0.5 rounded bg-white/[0.05] text-[9px]">Management only</span>}
+                {!data.canReviewApplications && <span className="px-1.5 py-0.5 rounded bg-white/[0.05] text-[9px]">No access</span>}
               </p>
-              {isManagement ? (
+              {data.canReviewApplications ? (
                 data.pendingByDept.length === 0 ? (
                   <p className="text-sm text-text-muted">No applications awaiting review. All caught up.</p>
                 ) : (
@@ -395,12 +396,12 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
           </div>
           <div className="divide-y divide-white/[0.04]">
             {[
-              ...(isManagement
+              ...(data.canReviewApplications
                 ? [{ label: "Review Applications", href: "/staff-panel/applications", icon: ICONS.document, accent: "#f97316" }]
                 : []),
               { label: "Manage Members", href: "/staff-panel/members", icon: ICONS.shield, accent: "#3b82f6" },
               { label: "Activity Logs", href: "/staff-panel/logs", icon: ICONS.clock, accent: "#d4a44a" },
-              ...(isManagement
+              ...(data.canEditQuestions
                 ? [{ label: "Config & Editors", href: "/staff-panel/config", icon: ICONS.gear, accent: "#c41e3a" }]
                 : []),
               { label: "Docs & Guide", href: "/staff-panel/docs", icon: ICONS.book, accent: "#6b5e4a" },

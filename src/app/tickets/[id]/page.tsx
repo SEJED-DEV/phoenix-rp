@@ -19,11 +19,65 @@ interface TicketMessage {
   createdAt: string;
 }
 
+interface TicketAttachment {
+  id: string;
+  ticketId: string;
+  messageId: string | null;
+  uploaderId: string;
+  uploaderName: string;
+  fileName: string;
+  storedName: string;
+  mimeType: string;
+  size: number;
+  createdAt: string;
+}
+
 interface Pagination {
   page: number;
   limit: number;
   total: number;
   totalPages: number;
+}
+
+function formatBytes(bytes: number) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function AttachmentItem({ att }: { att: TicketAttachment }) {
+  const url = `/api/tickets/${att.ticketId}/files/${att.id}`;
+  if (att.mimeType.startsWith("image/")) {
+    return (
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="shrink-0"
+        title={att.fileName}
+      >
+        <img
+          src={url}
+          alt={att.fileName}
+          loading="lazy"
+          className="max-w-[180px] max-h-[150px] w-auto rounded-lg object-cover border border-white/[0.08] hover:border-crimson/40 transition-colors"
+        />
+      </a>
+    );
+  }
+  return (
+    <a
+      href={url}
+      download={att.fileName}
+      className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] hover:border-crimson/40 hover:bg-white/[0.05] transition-colors"
+    >
+      <svg className="w-3.5 h-3.5 text-text-muted shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+      </svg>
+      <span className="text-[11px] text-text truncate max-w-[150px]">{att.fileName}</span>
+      <span className="text-[9px] text-text-muted/50 shrink-0">{formatBytes(att.size)}</span>
+    </a>
+  );
 }
 
 const STATUS_OPTIONS = [
@@ -74,10 +128,12 @@ export default function TicketDetailPage() {
 
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [messages, setMessages] = useState<TicketMessage[]>([]);
+  const [attachments, setAttachments] = useState<TicketAttachment[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 50, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [newMessage, setNewMessage] = useState("");
+  const [messageFiles, setMessageFiles] = useState<File[]>([]);
   const [isInternal, setIsInternal] = useState(false);
   const [sending, setSending] = useState(false);
   const [updating, setUpdating] = useState(false);
@@ -88,6 +144,7 @@ export default function TicketDetailPage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollBottomRef = useRef(false);
+  const messageFileRef = useRef<HTMLInputElement>(null);
 
   const isLoggedIn = !authLoading && status.state !== "logged_out";
   const isStaff = "isStaff" in status && status.isStaff;
@@ -104,6 +161,7 @@ export default function TicketDetailPage() {
       const prevTotal = pagination.total;
       setTicket(data.ticket);
       setMessages(data.messages || []);
+      setAttachments(data.attachments || []);
       setPagination(data.pagination);
 
       if (scrollToBottom) {
@@ -208,16 +266,21 @@ export default function TicketDetailPage() {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newMessage.trim() || sending) return;
+    if ((!newMessage.trim() && messageFiles.length === 0) || sending) return;
     setSending(true);
     try {
+      const formData = new FormData();
+      formData.append("content", newMessage.trim());
+      formData.append("isInternal", String(isInternal));
+      for (const f of messageFiles) formData.append("files", f);
+
       const res = await fetch(`/api/tickets/${id}`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content: newMessage.trim(), isInternal }),
+        body: formData,
       });
       if (res.ok) {
         setNewMessage("");
+        setMessageFiles([]);
         setIsInternal(false);
         fetchTicket(1, true); // jump to latest
       }
@@ -439,6 +502,15 @@ export default function TicketDetailPage() {
           <div className="mb-4 p-4 rounded-xl border border-white/[0.06] bg-white/[0.015]">
             <p className="text-xs text-text-muted mb-1 uppercase tracking-wider font-semibold">Description</p>
             <p className="text-sm text-text-dim whitespace-pre-wrap leading-relaxed">{ticket.description}</p>
+            {(() => {
+              const ticketAtts = attachments.filter((a) => !a.messageId);
+              if (ticketAtts.length === 0) return null;
+              return (
+                <div className="flex flex-wrap gap-2.5 mt-3 pt-3 border-t border-white/[0.05]">
+                  {ticketAtts.map((a) => <AttachmentItem key={a.id} att={a} />)}
+                </div>
+              );
+            })()}
           </div>
 
           {/* Pagination top bar */}
@@ -557,6 +629,15 @@ export default function TicketDetailPage() {
                           </span>
                         </div>
                         <p className="text-[13px] text-text-dim/90 whitespace-pre-wrap leading-relaxed break-words">{msg.content}</p>
+                        {(() => {
+                          const msgAtts = attachments.filter((a) => a.messageId === msg.id);
+                          if (msgAtts.length === 0) return null;
+                          return (
+                            <div className="flex flex-wrap gap-2.5 mt-2.5">
+                              {msgAtts.map((a) => <AttachmentItem key={a.id} att={a} />)}
+                            </div>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -583,6 +664,26 @@ export default function TicketDetailPage() {
           </div>
         ) : (
           <form onSubmit={handleSendMessage} className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+            {messageFiles.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2.5">
+                {messageFiles.map((f, i) => (
+                  <div key={`${f.name}-${i}`} className="flex items-center gap-2 pl-2.5 pr-1.5 py-1.5 rounded-lg border border-white/[0.08] bg-white/[0.03]">
+                    <span className="text-[11px] text-text truncate max-w-[120px]">{f.name}</span>
+                    <span className="text-[9px] text-text-muted/50 shrink-0">{formatBytes(f.size)}</span>
+                    <button
+                      type="button"
+                      onClick={() => setMessageFiles((prev) => prev.filter((_, idx) => idx !== i))}
+                      aria-label={`Remove ${f.name}`}
+                      className="w-5 h-5 flex items-center justify-center rounded text-text-muted hover:text-crimson hover:bg-white/[0.06] transition-colors"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="flex gap-2 items-end">
               {isStaff && (
                 <button
@@ -600,6 +701,32 @@ export default function TicketDetailPage() {
                   </svg>
                 </button>
               )}
+              <button
+                type="button"
+                onClick={() => messageFileRef.current?.click()}
+                className={`shrink-0 w-9 h-9 flex items-center justify-center rounded-lg text-xs transition-all ${
+                  messageFiles.length > 0
+                    ? "bg-crimson/15 border border-crimson/40 text-crimson"
+                    : "border border-white/[0.06] text-text-muted hover:border-white/[0.12] hover:text-text-dim"
+                }`}
+                title="Attach a file or image"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+              </button>
+              <input
+                ref={messageFileRef}
+                type="file"
+                multiple
+                accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.txt,.md,.log,.zip,.rar,.json,.csv,.mp4,.webm,.mov,.mp3,.wav,.ogg"
+                className="hidden"
+                onChange={(e) => {
+                  const selected = Array.from(e.target.files || []);
+                  setMessageFiles((prev) => [...prev, ...selected].slice(0, 8));
+                  e.target.value = "";
+                }}
+              />
               <input
                 type="text"
                 value={newMessage}
@@ -610,7 +737,7 @@ export default function TicketDetailPage() {
               />
               <button
                 type="submit"
-                disabled={!newMessage.trim() || sending}
+                disabled={(!newMessage.trim() && messageFiles.length === 0) || sending}
                 className="shrink-0 h-9 px-5 rounded-xl bg-crimson hover:bg-crimson/80 text-white text-xs font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(196,30,58,0.3)]"
               >
                 {sending ? (
