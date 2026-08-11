@@ -1,6 +1,16 @@
 const GUILD_ID = process.env.DISCORD_GUILD_ID!;
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 
+// In-memory caches for expensive Discord reads. Fetching the full member list
+// is paginated (1000 per request) and was previously re-done on every page/API
+// hit, which made /staff, the staff dashboard, and member search lag badly.
+const MEMBER_LIST_CACHE_TTL_MS = 60_000;
+const MEMBER_COUNT_CACHE_TTL_MS = 60_000;
+
+let memberListCache: { at: number; members: RawMember[] } | null = null;
+let memberListInflight: Promise<RawMember[]> | null = null;
+let memberCountCache: { at: number; value: number } | null = null;
+
 export const ROLES = {
   WHITELISTED: "1533959429697966233",
   CHECKIN: "1504849769845899284",
@@ -10,6 +20,7 @@ export const ROLES = {
 } as const;
 
 export const WHITELIST_INTERVIEW_ROLE = "1504855389223522384";
+export const STAFF_INTERVIEW_ROLE = "1509896150591864842";
 export const PUNISHMENT_ROLES = [
   { id: "1504840115263115375", name: "Warn 1", color: "#f87171", severity: 1 },
   { id: "1504840113467953173", name: "Warn 2", color: "#ef4444", severity: 2 },
@@ -128,28 +139,7 @@ const STAFF_ROLE_IDS = [
 
 export async function getStaffMembers(): Promise<StaffMember[]> {
   try {
-    console.log("[discord] Fetching guild members for staff page");
-    let allMembers: { roles: string[]; user: { id: string; username: string; avatar: string } }[] = [];
-    let after = "0";
-
-    while (true) {
-      const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bot ${BOT_TOKEN}` },
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        console.error(`[discord] getStaffMembers failed: ${res.status} — ${body}`);
-        break;
-      }
-      const batch = await res.json();
-      if (batch.length === 0) break;
-      allMembers = allMembers.concat(batch);
-      after = batch[batch.length - 1].user.id;
-      if (batch.length < 1000) break;
-    }
-
-    console.log(`[discord] Fetched ${allMembers.length} total members`);
+    const allMembers = await fetchAllMembers();
 
     const staff: StaffMember[] = allMembers
       .filter((m) => {
@@ -170,7 +160,6 @@ export async function getStaffMembers(): Promise<StaffMember[]> {
         return aHighest - bHighest;
       });
 
-    console.log(`[discord] Found ${staff.length} staff members`);
     return staff;
   } catch (e) {
     console.error("[discord] getStaffMembers exception:", e);
@@ -179,14 +168,20 @@ export async function getStaffMembers(): Promise<StaffMember[]> {
 }
 
 export async function getGuildMemberCount(): Promise<number> {
+  if (memberCountCache && Date.now() - memberCountCache.at < MEMBER_COUNT_CACHE_TTL_MS) {
+    return memberCountCache.value;
+  }
   try {
     const url = `https://discord.com/api/v10/guilds/${GUILD_ID}?with_counts=true`;
     const res = await fetch(url, {
       headers: { Authorization: `Bot ${BOT_TOKEN}` },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!res.ok) return 0;
     const data = await res.json();
-    return data.approximate_member_count ?? 0;
+    const count = data.approximate_member_count ?? 0;
+    if (count > 0) memberCountCache = { at: Date.now(), value: count };
+    return count;
   } catch {
     return 0;
   }
@@ -263,7 +258,7 @@ export async function removeRole(userId: string, roleId: string): Promise<boolea
   }
 }
 
-export async function getGuildRoles(): Promise<{ id: string; name: string; color: number; position: number }[]> {
+export async function getGuildRoles(): Promise<{ id: string; name: string; color: number; position: number; managed: boolean }[]> {
   try {
     const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/roles`;
     const res = await fetch(url, {
@@ -382,23 +377,150 @@ export async function getStaffCount(): Promise<number> {
 }
 
 async function fetchAllMembers(): Promise<RawMember[]> {
-  let allMembers: RawMember[] = [];
-  let after = "0";
+  if (memberListCache && Date.now() - memberListCache.at < MEMBER_LIST_CACHE_TTL_MS) {
+    return memberListCache.members;
+  }
+  if (memberListInflight) return memberListInflight;
 
-  while (true) {
-    const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}`;
+  memberListInflight = (async () => {
+    try {
+      const allMembers: RawMember[] = [];
+      let after = "0";
+
+      while (true) {
+        const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}`;
+        const res = await fetch(url, {
+          headers: { Authorization: `Bot ${BOT_TOKEN}` },
+          signal: AbortSignal.timeout(10_000),
+        });
+        if (!res.ok) break;
+        const batch: RawMember[] = await res.json();
+        if (batch.length === 0) break;
+        allMembers.push(...batch);
+        after = batch[batch.length - 1].user.id;
+        if (batch.length < 1000) break;
+      }
+
+      // Only cache a healthy result — never an empty list (Discord outage).
+      // Otherwise a failed fetch would make /staff report no staff for 60s.
+      if (allMembers.length > 0) {
+        memberListCache = { at: Date.now(), members: allMembers };
+      }
+      return allMembers;
+    } finally {
+      memberListInflight = null;
+    }
+  })();
+
+  return memberListInflight;
+}
+
+export interface ForumPost {
+  threadId: string;
+  name: string;
+  forumUrl: string;
+  imageUrl: string | null;
+  imageName: string | null;
+}
+
+interface ForumAttachment {
+  url: string;
+  filename: string;
+  content_type?: string;
+}
+
+async function getFirstMessageImage(threadId: string): Promise<{ url: string; name: string } | null> {
+  try {
+    const url = `https://discord.com/api/v10/channels/${threadId}/messages?limit=1`;
     const res = await fetch(url, {
       headers: { Authorization: `Bot ${BOT_TOKEN}` },
     });
-    if (!res.ok) break;
-    const batch: RawMember[] = await res.json();
-    if (batch.length === 0) break;
-    allMembers = allMembers.concat(batch);
-    after = batch[batch.length - 1].user.id;
-    if (batch.length < 1000) break;
+    if (!res.ok) return null;
+    const messages = await res.json();
+    const first = messages[0];
+    if (!first) return null;
+    const attachment = (first.attachments || []).find(
+      (a: ForumAttachment) => a.content_type?.startsWith("image/")
+    );
+    if (!attachment) return null;
+    return { url: attachment.url, name: attachment.filename };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Pulls every post (thread) from a Discord forum channel — active and archived.
+ * Each post includes its name and the first image from its opening message.
+ */
+export async function getForumPosts(forumChannelId: string): Promise<ForumPost[]> {
+  const posts: ForumPost[] = [];
+  const seen = new Set<string>();
+
+  const auth = { Authorization: `Bot ${BOT_TOKEN}` };
+
+  // Active threads live on the guild endpoint.
+  try {
+    const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/threads/active`;
+    const res = await fetch(url, { headers: auth });
+    if (res.ok) {
+      const data = await res.json();
+      for (const t of data.threads || []) {
+        if (t.parent_id === forumChannelId) {
+          seen.add(t.id);
+          posts.push({
+            threadId: t.id,
+            name: t.name || "Untitled",
+            forumUrl: `https://discord.com/channels/${GUILD_ID}/${t.id}`,
+            imageUrl: null,
+            imageName: null,
+          });
+        }
+      }
+    }
+  } catch {}
+
+  // Archived threads are paged off the channel endpoint.
+  let before: string | undefined;
+  while (true) {
+    try {
+      const q = before ? `?before=${before}` : "";
+      const url = `https://discord.com/api/v10/channels/${forumChannelId}/threads/archived/public${q}`;
+      const res = await fetch(url, { headers: auth });
+      if (!res.ok) break;
+      const data = await res.json();
+      const batch = data.threads || [];
+      if (batch.length === 0) break;
+      for (const t of batch) {
+        if (seen.has(t.id)) continue;
+        seen.add(t.id);
+        posts.push({
+          threadId: t.id,
+          name: t.name || "Untitled",
+          forumUrl: `https://discord.com/channels/${GUILD_ID}/${t.id}`,
+          imageUrl: null,
+          imageName: null,
+        });
+      }
+      if (!data.has_more) break;
+      before = batch[batch.length - 1].id;
+    } catch {
+      break;
+    }
   }
 
-  return allMembers;
+  // Fetch the opening message image for each post.
+  await Promise.all(
+    posts.map(async (p) => {
+      const img = await getFirstMessageImage(p.threadId);
+      if (img) {
+        p.imageUrl = img.url;
+        p.imageName = img.name;
+      }
+    })
+  );
+
+  return posts;
 }
 
 export async function searchMembers(query: string): Promise<{ userId: string; username: string; avatar: string; roles: string[] }[]> {

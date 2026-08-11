@@ -25,17 +25,26 @@ const OWNER_ROLES = [
   "1504840040424018123", // Owner
 ];
 
+// Live role lookups used to hit Discord on every staff-panel page and every
+// /api/staff/* request, adding a Discord round-trip to each. Cache per user
+// briefly so staff pages/APIs stay snappy; role changes land within ~30s.
+const ROLES_CACHE_TTL_MS = 30_000;
+const rolesCache = new Map<string, { roles: string[] | null; at: number }>();
+
 async function fetchLiveRoles(userId: string): Promise<string[] | null> {
+  const hit = rolesCache.get(userId);
+  if (hit && Date.now() - hit.at < ROLES_CACHE_TTL_MS) return hit.roles;
   const token = process.env.DISCORD_BOT_TOKEN;
   const guildId = process.env.DISCORD_GUILD_ID;
   if (!token || !guildId) return null;
   try {
     const res = await fetch(`https://discord.com/api/v10/guilds/${guildId}/members/${userId}`, {
       headers: { Authorization: `Bot ${token}` },
+      signal: AbortSignal.timeout(5000),
     });
-    if (!res.ok) return null;
-    const member = await res.json();
-    return member.roles || [];
+    const roles = res.ok ? ((await res.json()).roles as string[]) : null;
+    if (roles) rolesCache.set(userId, { roles, at: Date.now() });
+    return roles;
   } catch {
     return null;
   }

@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import Link from "next/link";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 
 interface Dept {
   name: string;
@@ -207,15 +208,19 @@ function DeptCard({ d, index }: { d: Dept; index: number }) {
 }
 
 export default function Departments() {
+  const { branding } = useSiteBrand();
+  const depts = departments.map((d) =>
+    d.btnHref === "https://discord.gg/rapZCCQBv" ? { ...d, btnHref: branding.discordInvite } : d
+  );
   return (
     <section id="departments" className="relative py-20 sm:py-28 lg:py-32 overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-25%] right-[15%] w-[800px] h-[600px] bg-crimson/[0.06] rounded-full blur-[170px]" />
         <div className="absolute bottom-[-25%] left-[5%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-30" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Header */}
@@ -230,7 +235,7 @@ export default function Departments() {
             <span className="block text-[2.2rem] sm:text-6xl md:text-7xl fire-text">CHOOSE YOUR</span>
             <span
               className="block text-[3rem] sm:text-7xl md:text-8xl text-text mt-3"
-              style={{ textShadow: "0 0 80px rgba(196,30,58,0.12)" }}
+              style={{ textShadow: "0 0 80px color-mix(in srgb, var(--color-crimson) 12%, transparent)" }}
             >
               PATH
             </span>
@@ -244,7 +249,7 @@ export default function Departments() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-          {departments.map((d, i) => (
+          {depts.map((d, i) => (
             <DeptCard key={d.name} d={d} index={i} />
           ))}
         </div>
@@ -257,7 +262,7 @@ export default function Departments() {
               Not sure yet? Join the community and ask — our staff will point you in the right direction.
             </p>
             <a
-              href="https://discord.gg/rapZCCQBv"
+              href={branding.discordInvite}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-semibold tracking-widest uppercase rounded-lg border border-gold/30 text-gold/80 hover:bg-gold/10 hover:text-gold hover:border-gold/50 transition-all duration-300"

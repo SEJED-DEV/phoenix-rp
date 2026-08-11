@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import Link from "next/link";
 
@@ -13,6 +14,7 @@ const links = [
   { label: "Storyline", href: "/storyline", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
   { label: "Tickets", href: "/tickets", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
   { label: "FAQ", href: "/faq", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+  { label: "Shop", href: "/shop", icon: "M15.75 10.5V6a3.75 3.75 0 10-7.5 0v4.5m11.356-1.993l1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 01-1.12-1.243l1.264-12A1.125 1.125 0 015.513 7.5h12.974c.576 0 1.059.435 1.119 1.007z" },
   { label: "Staff", href: "/staff", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
 ];
 
@@ -25,6 +27,7 @@ const bottomLinks = [
 
 export default function Navbar() {
   const { status, loading } = useAuth();
+  const { branding } = useSiteBrand();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [active, setActive] = useState("#home");
@@ -51,6 +54,7 @@ export default function Navbar() {
       if (path === "/departments") setActive("/departments");
       else if (path === "/rules") setActive("/rules");
       else if (path === "/faq") setActive("/faq");
+      else if (path === "/shop") setActive("/shop");
       else if (path === "/gallery") setActive("/gallery");
       else if (path === "/storyline") setActive("/storyline");
       else if (path === "/tickets") setActive("/tickets");
@@ -112,7 +116,7 @@ export default function Navbar() {
         className="hidden lg:block fixed top-0 left-0 right-0 z-50"
         style={{
           height: 64,
-          background: "rgba(5, 5, 7, 0.9)",
+          background: "color-mix(in srgb, var(--color-bg) 90%, transparent)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
@@ -120,8 +124,8 @@ export default function Navbar() {
       >
         <div style={{ maxWidth: 1280, margin: "0 auto", padding: "0 24px", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href={navHref("#home")} style={{ display: "flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
-            <img src="/logo.png" alt="Logo" style={{ width: 32, height: 32, objectFit: "contain" }} />
-            <span className="nav-logo-text">TUNISIAN PHOENIX</span>
+            <img src="/api/site/logo" alt="Logo" style={{ width: 32, height: 32, objectFit: "contain" }} />
+            <span className="nav-logo-text">{branding.siteName}</span>
           </a>
 
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
@@ -211,7 +215,7 @@ export default function Navbar() {
         className="lg:hidden fixed top-0 left-0 right-0 z-50"
         style={{
           height: 56,
-          background: "rgba(5, 5, 7, 0.9)",
+          background: "color-mix(in srgb, var(--color-bg) 90%, transparent)",
           backdropFilter: "blur(24px)",
           WebkitBackdropFilter: "blur(24px)",
           borderBottom: "1px solid rgba(255,255,255,0.05)",
@@ -219,8 +223,8 @@ export default function Navbar() {
       >
         <div style={{ padding: "0 16px", height: "100%", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <a href={navHref("#home")} style={{ display: "flex", alignItems: "center", gap: 8, textDecoration: "none" }}>
-            <img src="/logo.png" alt="Logo" style={{ width: 28, height: 28, objectFit: "contain" }} />
-            <span className="nav-logo-text" style={{ fontSize: 16 }}>TUNISIAN PHOENIX</span>
+            <img src="/api/site/logo" alt="Logo" style={{ width: 28, height: 28, objectFit: "contain" }} />
+            <span className="nav-logo-text" style={{ fontSize: 16 }}>{branding.siteName}</span>
           </a>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             {isLoggedIn && user ? (

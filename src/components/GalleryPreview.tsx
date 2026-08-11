@@ -56,12 +56,12 @@ export default function GalleryPreview() {
     <section id="gallery" ref={sectionRef} className="relative py-28 sm:py-36 lg:py-44 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-30%] right-[10%] w-[900px] h-[700px] bg-crimson/[0.05] rounded-full blur-[180px]" />
         <div className="absolute bottom-[-25%] left-[20%] w-[600px] h-[500px] bg-ember/[0.03] rounded-full blur-[140px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-20" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section tag */}
@@ -93,7 +93,7 @@ export default function GalleryPreview() {
             </span>
             <span
               className="block text-[3rem] sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] text-text mt-2"
-              style={{ textShadow: "0 0 80px rgba(196,30,58,0.1)" }}
+              style={{ textShadow: "0 0 80px color-mix(in srgb, var(--color-crimson) 10%, transparent)" }}
             >
               STREETS
             </span>
@@ -176,7 +176,7 @@ export default function GalleryPreview() {
                           <div
                             className="absolute inset-0"
                             style={{
-                              background: "radial-gradient(ellipse at center, transparent 40%, rgba(5,5,7,0.4) 100%)",
+                              background: "radial-gradient(ellipse at center, transparent 40%, color-mix(in srgb, var(--color-bg) 40%, transparent) 100%)",
                             }}
                           />
 
@@ -202,7 +202,7 @@ export default function GalleryPreview() {
                       <div
                         className="absolute inset-0 opacity-0 transition-opacity duration-500 pointer-events-none"
                         style={{
-                          background: "radial-gradient(ellipse at center, rgba(196,30,58,0.08) 0%, transparent 60%)",
+                          background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--color-crimson) 8%, transparent) 0%, transparent 60%)",
                           opacity: hovered ? 0.8 : 0,
                         }}
                       />

@@ -9,6 +9,8 @@ export const ACTION_META: Record<string, ActionMeta> = {
   member_ban: { label: "Member Banned", color: "#dc2626", description: "A member was banned from the Discord server." },
   member_unban: { label: "Member Unbanned", color: "#34d399", description: "A ban was lifted for a member." },
   role_change: { label: "Role Changed", color: "#fbbf24", description: "A member's roles were modified." },
+  role_grant: { label: "Role Granted", color: "#34d399", description: "A role was granted to a member." },
+  role_revoke: { label: "Role Revoked", color: "#f87171", description: "A role was removed from a member." },
   punish: { label: "Punishment Issued", color: "#ef4444", description: "A punishment role was applied to a member." },
   unpunish: { label: "Punishment Removed", color: "#34d399", description: "A punishment role was removed from a member." },
   application_approve: { label: "Application Approved", color: "#22c55e", description: "An application was approved." },
@@ -25,7 +27,16 @@ export const ACTION_META: Record<string, ActionMeta> = {
   app_config_editor_remove: { label: "Editor Revoked", color: "#f87171", description: "A member or role lost permission to edit an application's questions." },
   application_viewer_add: { label: "Viewer Granted", color: "#c084fc", description: "A member or role was granted permission to view an application's submissions." },
   application_viewer_remove: { label: "Viewer Revoked", color: "#f87171", description: "A member or role lost permission to view an application's submissions." },
+  application_reviewer_add: { label: "Approver Granted", color: "#fbbf24", description: "A member or role was granted permission to approve or deny applications." },
+  application_reviewer_remove: { label: "Approver Revoked", color: "#f87171", description: "A member or role lost permission to approve or deny applications." },
   application_questions_update: { label: "Questions Updated", color: "#fbbf24", description: "An application's questions were edited." },
+  shop_update: { label: "Shop Updated", color: "#fbbf24", description: "The shop page items or settings were changed." },
+  site_config_grant_add: { label: "Site Access Granted", color: "#34d399", description: "A member or role was granted permission to edit site-wide settings." },
+  site_config_grant_remove: { label: "Site Access Revoked", color: "#f87171", description: "A member or role lost permission to edit site-wide settings." },
+  broadcast_dm_start: { label: "Mass DM Started", color: "#f43f5e", description: "A broadcast DMing every guild member was started." },
+  broadcast_dm_cancel: { label: "Mass DM Cancelled", color: "#f87171", description: "A broadcast was cancelled before reaching every member." },
+  broadcast_dm_completed: { label: "Mass DM Completed", color: "#34d399", description: "A broadcast finished sending to every guild member." },
+  broadcast_dm_failed: { label: "Mass DM Failed", color: "#ef4444", description: "A broadcast failed before completing." },
 };
 
 export function getActionMeta(action: string): ActionMeta {

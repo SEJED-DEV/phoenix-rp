@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import FAQ from "@/components/FAQ";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "FAQ — Tunisian Phoenix RP",
-  description: "Frequently asked questions about Tunisian Phoenix RP.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `FAQ — ${siteName}`,
+    description: `Frequently asked questions about ${siteName}.`,
+  };
+}
 
 export default function FAQPage() {
   return (

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCategoryBySlug, categories } from "@/lib/rules.data";
 import RuleCategoryPage from "@/components/RuleCategoryPage";
+import { getSiteBranding } from "@/lib/site-branding";
 
 export function generateStaticParams() {
   return categories.map((cat) => ({ slug: cat.slug }));
@@ -10,12 +11,13 @@ export function generateStaticParams() {
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
   const { slug } = await params;
   const cat = getCategoryBySlug(slug);
-  if (!cat) return { title: "Rules — Tunisian Phoenix RP" };
+  if (!cat) return { title: `Rules — ${siteName}` };
   return {
-    title: `${cat.name} — Tunisian Phoenix RP`,
-    description: `${cat.name} for Tunisian Phoenix RP — ${cat.rules.length} rules.`,
+    title: `${cat.name} — ${siteName}`,
+    description: `${cat.name} for ${siteName} — ${cat.rules.length} rules.`,
   };
 }
 

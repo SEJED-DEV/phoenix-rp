@@ -115,7 +115,7 @@ export default function VideoPlayer({ src, className, onExpand }: VideoPlayerPro
           <div
             className="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center transition-all duration-300"
             style={{
-              background: "rgba(196, 30, 58, 0.75)",
+              background: "color-mix(in srgb, var(--color-crimson) 75%, transparent)",
               backdropFilter: "blur(12px)",
               border: "1px solid rgba(255,255,255,0.08)",
             }}
@@ -133,7 +133,7 @@ export default function VideoPlayer({ src, className, onExpand }: VideoPlayerPro
         style={{
           opacity: barVisible ? 1 : 0,
           pointerEvents: barVisible ? "auto" : "none",
-          background: "linear-gradient(to top, rgba(5,5,7,0.85) 0%, transparent 100%)",
+          background: "linear-gradient(to top, color-mix(in srgb, var(--color-bg) 85%, transparent) 0%, transparent 100%)",
           padding: "32px 12px 10px",
         }}
       >

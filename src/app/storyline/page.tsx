@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Storyline from "@/components/Storyline";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "Storyline — Tunisian Phoenix RP",
-  description: "The lore of Tunisian Phoenix RP — from the fall of Los Santos to the false paradise of Roxwood.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `Storyline — ${siteName}`,
+    description: `The lore of ${siteName} — from the fall of Los Santos to the false paradise of Roxwood.`,
+  };
+}
 
 export default function StorylinePage() {
   return (

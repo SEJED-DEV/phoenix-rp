@@ -1,9 +1,13 @@
 import type { Metadata } from "next";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "Staff Guide — Tunisian Phoenix RP",
-  description: "How things work on the Phoenix RP staff panel: tickets, applications, members, and more.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `Staff Guide — ${siteName}`,
+    description: "How things work on the Phoenix RP staff panel: tickets, applications, members, shop, and more.",
+  };
+}
 
 /* ─── Small building blocks ─────────────────────────────────────────── */
 
@@ -130,8 +134,10 @@ const NAV = [
   { id: "tickets", label: "Tickets" },
   { id: "applications", label: "Applications" },
   { id: "config", label: "Config & Questions" },
+  { id: "shop", label: "Shop" },
   { id: "logs", label: "Activity Logs" },
   { id: "members", label: "Members & Punishments" },
+  { id: "roles", label: "Role Manager" },
   { id: "notifications", label: "Discord Notifications" },
   { id: "best-practices", label: "Best Practices" },
   { id: "faq", label: "FAQ" },
@@ -232,12 +238,22 @@ export default function StaffDocsPage() {
                     [
                       <strong key="d" className="text-white">Config access</strong>,
                       "Management & Owner only",
-                      <>Control who can edit application questions and who can review applications via the <a className="text-gold hover:underline" href="#config">Config</a> page. Granted editors (individual members or whole roles) can edit questions for a specific application even if they are Staff-tier.</>,
+                      <>Control who can edit application questions, who can review applications, and who can approve or deny them via the <a className="text-gold hover:underline" href="#config">Config</a> page. Granted editors (individual members or whole roles) can edit questions for a specific application even if they are Staff-tier.</>,
                     ],
                     [
                       <strong key="e" className="text-white">Application reviewer</strong>,
                       "Any Staff Team member granted access in Config",
-                      <>Can <em>view</em> the applications of a department a Manager has granted them. Reviewers can read submissions but <strong className="text-text">cannot approve or deny</strong> — decisions stay with Management &amp; Owner.</>,
+                      <>Can <em>view</em> the applications of a department a Manager has granted them. Reviewers can read submissions but <strong className="text-text">cannot approve or deny</strong> unless they are also granted as an <em>application approver</em>.</>,
+                    ],
+                    [
+                      <strong key="f" className="text-white">Application approver</strong>,
+                      "Any Staff Team member granted in Config",
+                      <>Granted per application from the <strong className="text-text">Application Approvers</strong> section on that application&apos;s card. Approvers can <em>approve or deny</em> submissions for that application, for anything they can view.</>,
+                    ],
+                    [
+                      <strong key="g" className="text-white">Role Manager</strong>,
+                      "Any Staff Team member (scope-limited by Discord role position)",
+                      <>Grant or remove <em>lower</em> roles from the <a className="text-gold hover:underline" href="#roles">Role Manager</a> page. You can only touch roles positioned below your own highest Discord role, so senior staff can always override junior changes.</>,
                     ],
                   ]}
                 />
@@ -246,8 +262,9 @@ export default function StaffDocsPage() {
               <Callout tone="info" title="One rule of thumb">
                 <p>
                   If you hold the <strong className="text-text">Staff Team</strong> role you can use the panel. Management
-                  and Owner tiers add application review on top. If a Manager grants you access as an <em>application
-                  reviewer</em>, you can read a department&apos;s applications but decisions remain with Management. If a
+                  and Owner tiers can approve or deny applications by default. If a Manager grants you access as an{" "}
+                  <em>application reviewer</em>, you can read a department&apos;s applications but can only decide if you are
+                  also granted as an <em>application approver</em>. If a
                   page says “Access denied”, it usually means you are a Staff member trying to review applications without
                   a grant — ask a Manager.
                 </p>
@@ -498,9 +515,14 @@ export default function StaffDocsPage() {
             >
               <P>
                 The Config page lives at <Inline>/staff-panel/config</Inline> and is restricted to{" "}
-                <strong className="text-text">Management &amp; Owner</strong>. It lists every application (Whitelist,
-                departments, Staff Team, Ban Appeal). For each one you can grant question-edit access, grant application
-                reviewers, and open the question editor.
+                <strong className="text-text">Management &amp; Owner</strong> — though users granted question-editor access
+                can also open it (they see only their own departments). It is a hub: a card for every on-site application
+                (Whitelist, Family, Staff Team, Ban Appeal), plus the FAQ and Shop editors. Open a department card to manage
+                that application&apos;s question editors, reviewers, and approvers, or jump straight into the question editor.
+              </P>
+              <P>
+                Each application&apos;s page lives at <Inline>/staff-panel/config/&lt;department&gt;</Inline> (for example{" "}
+                <Inline>/staff-panel/config/family</Inline>) and holds every grant section for that one application.
               </P>
 
               <Sub title="Granting editors">
@@ -514,7 +536,8 @@ export default function StaffDocsPage() {
 
               <Sub title="Granting application reviewers">
                 <P>
-                  Each application card also has an <strong className="text-text">Application Reviewers</strong> section.
+                  Each department&apos;s page in Config also has an{" "}
+                  <strong className="text-text">Application Reviewers</strong> section.
                   Granting a member or role there lets them <em>view</em> that application&apos;s submissions — the queue and
                   individual applications appear in their Applications page, but only for departments you grant them.
                 </P>
@@ -523,6 +546,38 @@ export default function StaffDocsPage() {
                     Reviewers can read the full submission and every applicant&apos;s Discord profile. Only grant people you
                     trust, and remember: reviewers can never approve or deny — decisions stay with Management &amp; Owner.
                     Reviewer grants are logged in the activity feed, just like editor grants.
+                  </p>
+                </Callout>
+              </Sub>
+
+              <Sub title="Granting application approvers">
+                <P>
+                  Each department&apos;s page in Config has an <strong className="text-text">Application Approvers</strong>{" "}
+                  section, right below the reviewers. Members or roles granted here can{" "}
+                  <strong className="text-text">approve and deny</strong>{" "}
+                  applications — but only for <em>that specific application</em>, not the whole panel.
+                </P>
+                <Steps
+                  items={[
+                    <>
+                      Pick a <strong className="text-text">Role</strong> or <strong className="text-text">Member</strong> just
+                      like an editor or reviewer grant. Granting a role lets every holder of that role make decisions for that
+                      application.
+                    </>,
+                    <>
+                      Approvers still need viewing access to see a department&apos;s queue. Grant the same role as an{" "}
+                      <strong className="text-text">Application Reviewer</strong> on the same application.
+                    </>,
+                    <>
+                      Approve / Deny buttons appear on pending applications they can view. Management &amp; Owner can always
+                      decide regardless of these grants.
+                    </>,
+                  ]}
+                />
+                <Callout tone="warn" title="Approvers make real decisions">
+                  <p>
+                    Approving a Whitelist application grants the applicant the interview role, and every decision notifies the
+                    applicant. Approver grants are logged in the activity feed, so keep the list to people you trust.
                   </p>
                 </Callout>
               </Sub>
@@ -564,10 +619,103 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 6. Activity Logs ─────────────────────────── */}
+            {/* ── 6. Shop ──────────────────────────────────── */}
+            <Section
+              id="shop"
+              num="06"
+              title="Shop"
+              intro="The shop is what players see on the public /shop page. Management & Owner control everything about it from a single editor."
+            >
+              <P>
+                The shop editor lives at <Inline>/staff-panel/config/shop</Inline> and is restricted to{" "}
+                <strong className="text-text">Management &amp; Owner</strong>. It has two parts: the{" "}
+                <strong className="text-text">item list</strong> and the <strong className="text-text">settings</strong>{" "}
+                (currency label, notice, global prices, and the Discord forum source).
+              </P>
+
+              <Sub title="Items">
+                <P>
+                  Each item has a <strong className="text-text">photo</strong>, a <strong className="text-text">name</strong>,
+                  a short <strong className="text-text">description</strong>, and one or more{" "}
+                  <strong className="text-text">prices</strong>. Reorder items with the up / down arrows, toggle{" "}
+                  <em>Visible</em> to hide an item without deleting it, and remove it with the × button.
+                </P>
+                <DocTable
+                  head={["Price field", "What it is"]}
+                  rows={[
+                    [
+                      "Value",
+                      "The amount itself, e.g. 5000.",
+                    ],
+                    [
+                      "Label",
+                      "An optional name for that price option, e.g. “Car” or “VIP”. Shown in front of the value.",
+                    ],
+                    [
+                      "Currency",
+                      "Never set per price — the currency label from settings is appended after the value automatically, e.g. “Car · 5000 Credits”.",
+                    ],
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="Global prices">
+                <P>
+                  Prices defined under <strong className="text-text">Global prices</strong> apply to{" "}
+                  <em>every item that has no prices of its own</em>. An item with its own prices always shows those
+                  instead. Use this when most items share the same price structure.
+                </P>
+              </Sub>
+
+              <Sub title="The notice">
+                <P>
+                  The notice appears at the top of the public shop page when enabled. Links work: paste a bare URL (or
+                  use <Inline>[text](https://...)</Inline>) and it becomes clickable.
+                </P>
+              </Sub>
+
+              <Sub title="Pulling items from Discord">
+                <Steps
+                  items={[
+                    <>
+                      Copy the forum channel ID from Discord and paste it into{" "}
+                      <strong className="text-text">Discord forum channel ID</strong>.
+                    </>,
+                    <>
+                      Press <strong className="text-text">Pull items from Discord forum</strong>. Every forum post
+                      (photo + title) that isn't already in the shop is added automatically; photos are downloaded and
+                      stored with the item.
+                    </>,
+                    <>
+                      Posts without a usable image are skipped and reported so you can add them manually.
+                    </>,
+                  ]}
+                />
+                <Callout tone="info" title="Imports never duplicate">
+                  <p>Already-imported posts are recognised by their forum thread and skipped on later imports.</p>
+                </Callout>
+              </Sub>
+
+              <Sub title="Photos">
+                <P>
+                  Click the photo box on an item to upload a new image, or remove it to fall back to the default logo.
+                  Photos are served by the shop image API and cropped to the card ratio on the shop page.
+                </P>
+              </Sub>
+
+              <Callout tone="warn" title="Saving overwrites">
+                <p>
+                  Press <strong className="text-text">Save changes</strong> to apply everything — items, prices, global
+                  prices, notice and settings all save together. Deleting an item is permanent once saved, so
+                  double-check before saving.
+                </p>
+              </Callout>
+            </Section>
+
+            {/* ── 7. Activity Logs ─────────────────────────── */}
             <Section
               id="logs"
-              num="06"
+              num="07"
               title="Activity Logs"
               intro="Every staff action is recorded — punishments, application decisions, ticket actions, config changes, and question edits."
             >
@@ -597,7 +745,7 @@ export default function StaffDocsPage() {
                     ["Applications", "Approvals and denials."],
                     ["Tickets", "Assignments and closures."],
                     ["Content", "Announcements created/deleted, staff notes added/deleted."],
-                    ["Config", "Editor grants/revokes and question updates (with a full before/after diff)."],
+                    ["Config", "Editor grants/revokes, viewer grants/revokes, approver grants/revokes, question updates (full before/after diff), and shop updates (items, prices, global prices, notice)."],
                     ["Session", "Staff logins."],
                   ]}
                 />
@@ -611,10 +759,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 7. Members & Punishments ─────────────────── */}
+            {/* ── 8. Members & Punishments ─────────────────── */}
             <Section
               id="members"
-              num="07"
+              num="08"
               title="Members & Punishments"
               intro="The member management page lets you search the server, inspect a member's roles and existing punishments, and issue punishments."
             >
@@ -666,10 +814,67 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 8. Discord Notifications ─────────────────── */}
+            {/* ── 9. Role Manager ──────────────────────────── */}
+            <Section
+              id="roles"
+              num="09"
+              title="Role Manager"
+              intro="Grant and remove member roles without leaving the panel. Every change is logged and posted to Discord."
+            >
+              <Sub title="Who can use it">
+                <P>
+                  Any <strong className="text-text">Staff Team</strong> member can open the Role Manager. You can only
+                  manage roles that sit <em>below your own highest Discord role</em> — the panel hides anything at or
+                  above your position. This keeps the hierarchy safe: a Support member can hand out low roles, but only
+                  a Manager can touch higher ones, and a Manager can always undo a junior change.
+                </P>
+              </Sub>
+
+              <Sub title="What you can't touch">
+                <DocTable
+                  head={["Role", "Why it's locked"]}
+                  rows={[
+                    [<strong key="a" className="text-white">@everyone</strong>, "It's not a real managed role — everyone has it automatically."],
+                    [<strong key="b" className="text-white">Bot / integration roles</strong>, "Managed by Discord, not by staff. Trying to move them would error."],
+                    [<strong key="c" className="text-white">Roles at or above your highest role</strong>, "Hierarchy protection — you can only manage downward."],
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="Granting a role">
+                <Steps
+                  items={[
+                    <>Search for the member and select them from the list.</>,
+                    <>Under <strong className="text-text">Grant Role</strong>, pick a role from the grid. Roles the member already holds are greyed out.</>,
+                    <>Enter an optional reason — it is saved to the activity log and posted to Discord.</>,
+                    <>Click <strong className="text-text">Grant Role</strong>. The change applies immediately.</>,
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="Removing a role">
+                <Steps
+                  items={[
+                    <>Select the member, then find the <strong className="text-text">Remove Role</strong> section.</>,
+                    <>Pick the role to take away. Only roles below your position are listed.</>,
+                    <>Click <strong className="text-text">Remove Role</strong> and confirm. The role is removed instantly.</>,
+                  ]}
+                />
+              </Sub>
+
+              <Callout tone="warn" title="Think before you click">
+                <p>
+                  Role changes are immediate, logged against your account, and broadcast to the role log channel with
+                  the target, the role, your name, and your reason. There is no automatic “undo” — if you remove the
+                  wrong role, re-add it and note the correction.
+                </p>
+              </Callout>
+            </Section>
+
+            {/* ── 10. Discord Notifications ────────────────── */}
             <Section
               id="notifications"
-              num="08"
+              num="10"
               title="Discord Notifications"
               intro="The site posts to a few Discord channels so the team is never blind to what is happening."
             >
@@ -691,10 +896,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 9. Best Practices ────────────────────────── */}
+            {/* ── 10. Best Practices ───────────────────────── */}
             <Section
               id="best-practices"
-              num="09"
+              num="11"
               title="Best Practices"
               intro="A short code of conduct for working on the panel. Following this keeps the team consistent and the community happy."
             >
@@ -711,8 +916,8 @@ export default function StaffDocsPage() {
               />
             </Section>
 
-            {/* ── 10. FAQ ──────────────────────────────────── */}
-            <Section id="faq" num="10" title="FAQ">
+            {/* ── 11. FAQ ──────────────────────────────────── */}
+            <Section id="faq" num="12" title="FAQ">
               <div className="space-y-4">
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
                   <p className="text-sm font-bold text-text mb-1">I can log in but the staff panel says I don't have access.</p>
@@ -729,12 +934,12 @@ export default function StaffDocsPage() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
-                  <p className="text-sm font-bold text-text mb-1">I was granted editor access but the Config page says I can&apos;t open it.</p>
+                  <p className="text-sm font-bold text-text mb-1">I was granted editor access but can't manage grants.</p>
                   <p className="text-[13px] text-text-dim leading-relaxed">
-                    The Config <em>page</em> itself is Management &amp; Owner only. If you were granted as a question
-                    editor, open the editor directly from a granted link (or have a Manager open{" "}
-                    <Inline>/staff-panel/config/questions/&lt;department&gt;</Inline> for you). You&apos;ll still be able to edit
-                    questions for that department.
+                    Grant management is <strong className="text-text">Management &amp; Owner</strong> only. As a granted
+                    question editor you can still open <Inline>/staff-panel/config</Inline> (you&apos;ll see just your own
+                    department), then open your department and use <Inline>Edit questions</Inline> — or go straight to{" "}
+                    <Inline>/staff-panel/config/questions/&lt;department&gt;</Inline>.
                   </p>
                 </div>
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">

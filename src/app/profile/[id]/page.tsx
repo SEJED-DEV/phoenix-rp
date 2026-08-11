@@ -57,7 +57,7 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#050507]">
+      <div className="min-h-screen bg-[var(--color-bg)]">
         <div className="relative z-10 max-w-3xl mx-auto px-4 sm:px-6 pb-24" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
           <Skeleton className="h-4 w-16 mb-8" />
           <SkeletonCard className="p-6 sm:p-8 mb-6">
@@ -108,7 +108,7 @@ export default function ProfilePage() {
   const isCreator = profile.isCreator;
 
   return (
-    <div className="min-h-screen bg-[#050507]">
+    <div className="min-h-screen bg-[var(--color-bg)]">
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute top-[-20%] left-[10%] w-[700px] h-[600px] bg-crimson/[0.04] rounded-full blur-[160px]" />
         <div className="absolute bottom-[-20%] right-[10%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
@@ -132,8 +132,8 @@ export default function ProfilePage() {
             {isCreator ? (
               <>
                 <div className="shrink-0 relative">
-                  <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(from 0deg, #f59e0b, #c41e3a, #e85d04, #f59e0b)", padding: 3 }}>
-                    <div className="w-full h-full rounded-full bg-[#050507]" />
+                  <div className="absolute inset-0 rounded-full" style={{ background: "conic-gradient(from 0deg, #f59e0b, var(--color-crimson), var(--color-ember), #f59e0b)", padding: 3 }}>
+                    <div className="w-full h-full rounded-full bg-[var(--color-bg)]" />
                   </div>
                   <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gold/30">
                     <img src={profile.avatar} alt={profile.username} className="w-full h-full object-cover" />

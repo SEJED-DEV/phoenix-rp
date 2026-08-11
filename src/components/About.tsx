@@ -80,13 +80,13 @@ export default function About() {
     <section id="about" ref={sectionRef} className="relative py-28 sm:py-36 lg:py-44 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-40%] left-1/2 -translate-x-1/2 w-[1200px] h-[900px] bg-crimson/[0.06] rounded-full blur-[200px]" />
         <div className="absolute bottom-[-30%] left-[10%] w-[700px] h-[600px] bg-ember/[0.035] rounded-full blur-[160px]" />
         <div className="absolute top-[20%] right-[-10%] w-[400px] h-[400px] bg-gold/[0.02] rounded-full blur-[120px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-20" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section tag */}
@@ -118,7 +118,7 @@ export default function About() {
             </span>
             <span
               className="block text-[3.8rem] sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] text-text"
-              style={{ textShadow: "0 0 100px rgba(196,30,58,0.15), 0 0 200px rgba(232,93,4,0.06)" }}
+              style={{ textShadow: "0 0 100px color-mix(in srgb, var(--color-crimson) 15%, transparent), 0 0 200px color-mix(in srgb, var(--color-ember) 6%, transparent)" }}
             >
               FIRE
             </span>

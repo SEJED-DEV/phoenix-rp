@@ -38,14 +38,14 @@ function CategoryCard({ cat, index }: { cat: typeof baseCategories[number]; inde
             alt={cat.name}
             className="w-full h-full object-cover brightness-[0.6] group-hover:brightness-[0.75] group-hover:scale-105 transition-all duration-700"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#050507]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/40 to-transparent" />
 
           {/* Corner markers */}
           <div className="absolute top-3 right-3 w-4 h-4 border-t border-r border-white/0 group-hover:border-crimson/40 transition-colors duration-500" />
           <div className="absolute bottom-3 left-3 w-4 h-4 border-b border-l border-white/0 group-hover:border-crimson/40 transition-colors duration-500" />
 
           {/* Rule count badge */}
-          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[#050507]/70 backdrop-blur-sm border border-white/[0.06]">
+          <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-[var(--color-bg)]/70 backdrop-blur-sm border border-white/[0.06]">
             <svg className="w-3 h-3 text-crimson" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
             </svg>
@@ -112,12 +112,12 @@ export default function Rules() {
     <section id="rules" className="relative overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-30%] left-[20%] w-[800px] h-[600px] bg-crimson/[0.06] rounded-full blur-[180px]" />
         <div className="absolute bottom-[-30%] right-[15%] w-[600px] h-[500px] bg-gold/[0.04] rounded-full blur-[150px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-25" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       {/* Header */}
       <div ref={headerRef} className="relative z-10 pt-32 sm:pt-40 pb-20 sm:pb-28">
@@ -138,7 +138,7 @@ export default function Rules() {
               <span className="block text-[2.2rem] sm:text-6xl md:text-7xl lg:text-8xl fire-text">FOLLOW THE</span>
               <span
                 className="block text-[3rem] sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] text-text mt-2"
-                style={{ textShadow: "0 0 80px rgba(196,30,58,0.12)" }}
+                style={{ textShadow: "0 0 80px color-mix(in srgb, var(--color-crimson) 12%, transparent)" }}
               >
                 CODE
               </span>

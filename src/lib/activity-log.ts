@@ -5,6 +5,8 @@ export type StaffAction =
   | "member_ban"
   | "member_unban"
   | "role_change"
+  | "role_grant"
+  | "role_revoke"
   | "punish"
   | "unpunish"
   | "application_approve"
@@ -21,8 +23,18 @@ export type StaffAction =
   | "app_config_editor_remove"
   | "application_viewer_add"
   | "application_viewer_remove"
+  | "application_reviewer_add"
+  | "application_reviewer_remove"
   | "application_questions_update"
-  | "faq_update";
+  | "faq_update"
+  | "shop_update"
+  | "site_branding_update"
+  | "site_config_grant_add"
+  | "site_config_grant_remove"
+  | "broadcast_dm_start"
+  | "broadcast_dm_cancel"
+  | "broadcast_dm_completed"
+  | "broadcast_dm_failed";
 
 interface LogEntry {
   actorId: string;

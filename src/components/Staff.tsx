@@ -62,44 +62,25 @@ function StaffCard({ member, accent, onClick }: { member: StaffMember; accent: s
   const otherRoles = primaryRole ? getOtherRoles(member.roles, primaryRole.id) : [];
 
   return (
-    <button
-      onClick={onClick}
-      className="group relative p-5 rounded-2xl text-center transition-all duration-500 ease-out cursor-pointer border border-white/[0.04] hover:border-white/[0.1]"
-      style={{
-        background: "linear-gradient(160deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)",
-      }}
-    >
-      <div
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
-        style={{
-          background: `radial-gradient(circle at 50% 0%, ${accent}12 0%, transparent 70%)`,
-        }}
-      />
-      <div className="relative z-10">
-        <div className="relative w-16 h-16 mx-auto mb-3">
-          <div
-            className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{ boxShadow: `0 0 24px ${accent}30` }}
-          />
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 transition-all duration-500" style={{ borderColor: `${accent}25` }}>
-            <img src={member.avatar} alt={member.username} className="w-full h-full object-cover" />
-          </div>
+    <button onClick={onClick} className="staff-card" aria-label={`View ${member.username}'s profile`}>
+      <div className="staff-card-glow" style={{ background: `radial-gradient(circle at 50% 0%, ${accent}14 0%, transparent 70%)` }} />
+      <div className="relative">
+        <div className="staff-avatar">
+          <img src={member.avatar} alt={member.username} loading="lazy" />
         </div>
-        <h3 className="font-display text-sm tracking-wider mb-1 text-text group-hover:text-white transition-colors duration-300">
-          {member.username}
-        </h3>
+        <h3 className="staff-card-name">{member.username}</h3>
         {primaryRole && (
-          <p className="text-[10px] tracking-widest font-semibold uppercase mb-1.5" style={{ color: primaryRole.color }}>
+          <p className="staff-card-role" style={{ color: primaryRole.color }}>
             {primaryRole.name}
           </p>
         )}
         {otherRoles.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-1 mt-2">
+          <div className="staff-card-chips">
             {otherRoles.map((r) => (
               <span
                 key={r.id}
-                className="text-[8px] px-1.5 py-0.5 rounded-full border uppercase tracking-wider"
-                style={{ borderColor: `${r.color}18`, backgroundColor: `${r.color}08`, color: `${r.color}cc` }}
+                className="staff-chip"
+                style={{ borderColor: `${r.color}1e`, backgroundColor: `${r.color}0a`, color: `${r.color}cc` }}
               >
                 {r.name}
               </span>
@@ -110,7 +91,6 @@ function StaffCard({ member, accent, onClick }: { member: StaffMember; accent: s
     </button>
   );
 }
-
 
 export default function Staff() {
   const router = useRouter();
@@ -154,29 +134,50 @@ export default function Staff() {
     return groups;
   }, [members]);
 
-  const staffGroups = STAFF_ROLE_GROUPS;
+  const activeGroups = useMemo(
+    () => STAFF_ROLE_GROUPS.filter((g) => (groupedMembers[g.label]?.length ?? 0) > 0),
+    [groupedMembers],
+  );
+
+  const leadershipCount = groupedMembers["Leadership"]?.length ?? 0;
 
   return (
-    <section id="staff" className="relative py-32 px-6">
-      <div className="fixed inset-0 -z-10 pointer-events-none">
-        <div className="absolute top-[-10%] left-[20%] w-[600px] h-[500px] bg-crimson/[0.03] rounded-full blur-[140px]" />
-        <div className="absolute bottom-[-10%] right-[20%] w-[500px] h-[400px] bg-gold/[0.02] rounded-full blur-[120px]" />
+    <section id="staff" className="relative min-h-screen bg-bg">
+      <div className="absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-bg" />
+        <div className="absolute top-[-20%] left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full blur-[200px]" style={{ background: "color-mix(in srgb, var(--color-crimson) 4%, transparent)" }} />
       </div>
 
-      <div className="max-w-5xl mx-auto relative z-10">
-        <div className="text-center mb-20">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="w-12 h-px bg-gradient-to-r from-transparent to-gold" />
-            <span className="text-gold text-xs tracking-[0.3em] uppercase font-medium">Our Team</span>
-            <div className="w-12 h-px bg-gradient-to-l from-transparent to-gold" />
-          </div>
-          <h2 className="font-display text-5xl md:text-6xl lg:text-7xl">
-            RUNNING THE <span className="fire-text">SHOW</span>
-          </h2>
+      <div className="staff-shell">
+        <div className="staff-header">
+          <div className="staff-eyebrow">Our Team</div>
+          <h1 className="staff-title">Meet the Staff</h1>
+          <p className="staff-sub">
+            The people keeping the city running — leadership, management, and the staff team behind the scenes.
+          </p>
         </div>
 
+        {!loading && members.length > 0 && (
+          <div className="staff-stats">
+            <div className="staff-stat">
+              <b>{members.length}</b>
+              Total Staff
+            </div>
+            <div className="staff-stat">
+              <b>{activeGroups.length}</b>
+              Teams
+            </div>
+            {leadershipCount > 0 && (
+              <div className="staff-stat">
+                <b>{leadershipCount}</b>
+                Leadership
+              </div>
+            )}
+          </div>
+        )}
+
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="staff-grid">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} className="p-6">
                 <div className="flex flex-col items-center gap-3">
@@ -193,48 +194,55 @@ export default function Staff() {
           </div>
         ) : (
           <>
-            {/* Staff groups */}
-            {staffGroups.map((group) => {
-              const groupMembers = groupedMembers[group.label];
-              if (!groupMembers || groupMembers.length === 0) return null;
-
+            {activeGroups.map((group) => {
+              const groupMembers = groupedMembers[group.label] || [];
               return (
-                <div key={group.label} className="mb-16">
-                  <div className="flex items-center gap-4 mb-8">
-                    <div className="flex-1 h-px" style={{ backgroundImage: `linear-gradient(to right, transparent, ${group.accent}30)` }} />
-                    <div className="text-center">
-                      <h3 className="font-display text-xl tracking-[0.15em] uppercase" style={{ color: group.accent }}>
-                        {group.label}
-                      </h3>
-                      <p className="text-text-muted text-[11px] mt-0.5">{group.description}</p>
-                    </div>
-                    <div className="flex-1 h-px" style={{ backgroundImage: `linear-gradient(to left, transparent, ${group.accent}30)` }} />
+                <div key={group.label} className="staff-group stagger-1">
+                  <div className="staff-group-head">
+                    <span className="staff-group-dot" style={{ background: group.accent, boxShadow: `0 0 12px ${group.accent}60` }} />
+                    <h3 className="staff-group-name">{group.label}</h3>
+                    <span className="staff-group-desc">{group.description}</span>
+                    <span
+                      className="staff-group-count"
+                      style={{ color: group.accent, borderColor: `${group.accent}30`, backgroundColor: `${group.accent}0d` }}
+                    >
+                      {groupMembers.length}
+                    </span>
+                    <span className="staff-group-rule" />
                   </div>
 
-                  <div className={`grid gap-4 ${
-                    groupMembers.length <= 3 ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3" :
-                    groupMembers.length <= 6 ? "grid-cols-2 md:grid-cols-3" :
-                    "grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
-                  }`}>
+                  <div className="staff-grid">
                     {groupMembers.map((m) => (
-                      <StaffCard key={m.userId} member={m} accent={group.accent} onClick={() => router.push(`/profile/${m.userId}`)} />
+                      <StaffCard
+                        key={m.userId}
+                        member={m}
+                        accent={group.accent}
+                        onClick={() => router.push(`/profile/${m.userId}`)}
+                      />
                     ))}
                   </div>
                 </div>
               );
             })}
 
-            {/* Other staff */}
             {groupedMembers["Other"] && groupedMembers["Other"].length > 0 && (
-              <div className="mb-16">
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="flex-1 h-px bg-gradient-to-r from-transparent to-white/10" />
-                  <h3 className="font-display text-xl tracking-[0.15em] uppercase text-text-muted">Other Staff</h3>
-                  <div className="flex-1 h-px bg-gradient-to-l from-transparent to-white/10" />
+              <div className="staff-group stagger-1">
+                <div className="staff-group-head">
+                  <span className="staff-group-dot" style={{ background: "#666", boxShadow: "0 0 12px rgba(255,255,255,0.1)" }} />
+                  <h3 className="staff-group-name" style={{ color: "#888" }}>Other Staff</h3>
+                  <span className="staff-group-count" style={{ color: "#888", borderColor: "rgba(255,255,255,0.1)", backgroundColor: "rgba(255,255,255,0.02)" }}>
+                    {groupedMembers["Other"].length}
+                  </span>
+                  <span className="staff-group-rule" />
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <div className="staff-grid">
                   {groupedMembers["Other"].map((m) => (
-                    <StaffCard key={m.userId} member={m} accent="#666" onClick={() => router.push(`/profile/${m.userId}`)} />
+                    <StaffCard
+                      key={m.userId}
+                      member={m}
+                      accent="#666"
+                      onClick={() => router.push(`/profile/${m.userId}`)}
+                    />
                   ))}
                 </div>
               </div>

@@ -13,6 +13,7 @@ const RESULT_CHANNEL = process.env.DISCORD_APPLICATIONS_RESULT_CHANNEL;
 
 const INTERVIEW_CHANNEL = "1504840565080985601";
 const INTERVIEW_VOICE_CHANNEL = "1504840361535869091";
+const STAFF_RESULT_CHANNEL = "1509811576428040243";
 
 function toV2(container: ContainerBuilder): unknown[] {
   return [container.toJSON()];
@@ -93,8 +94,9 @@ export async function notifyApplicationResult(info: ApplicationResultInfo, baseU
     .addTextDisplayComponents(new TextDisplayBuilder().setContent(dmLines.join("\n")));
 
   const posts: Promise<boolean>[] = [];
-  if (RESULT_CHANNEL) {
-    posts.push(sendContainer(RESULT_CHANNEL, toV2(channelContainer)));
+  const resultChannel = info.dept.startsWith("staff_") ? STAFF_RESULT_CHANNEL : RESULT_CHANNEL;
+  if (resultChannel) {
+    posts.push(sendContainer(resultChannel, toV2(channelContainer)));
   }
   posts.push(sendDmContainer(info.discordId, toV2(dmContainer)));
 

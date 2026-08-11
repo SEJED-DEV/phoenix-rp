@@ -4,11 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Skeleton, SkeletonCard, SkeletonCircle } from "@/components/Skeleton";
 import { getActionMeta } from "@/lib/staff-actions";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 
 interface DashboardData {
   roleLevel: string;
   canReviewApplications: boolean;
   canEditQuestions: boolean;
+  isSiteOwner: boolean;
   totalMembers: number;
   staffTotal: number;
   pendingApplications: number;
@@ -35,14 +37,14 @@ interface StaffPanelProps {
 
 const ROLE_META: Record<string, { label: string; accent: string }> = {
   staff: { label: "Staff", accent: "#3b82f6" },
-  management: { label: "Management", accent: "#d4a44a" },
-  owner: { label: "Owner", accent: "#c41e3a" },
+  management: { label: "Management", accent: "var(--color-gold)" },
+  owner: { label: "Owner", accent: "var(--color-crimson)" },
 };
 
 const PRIORITY_DOT: Record<string, string> = {
   high: "#ef4444",
-  medium: "#d4a44a",
-  low: "#6b5e4a",
+  medium: "var(--color-gold)",
+  low: "var(--color-text-muted)",
 };
 
 const ICONS = {
@@ -54,6 +56,7 @@ const ICONS = {
   shield: "M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z",
   gear: "M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.272-.806.108-1.204-.165-.397-.506-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.764-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894zM12 15a3 3 0 100-6 3 3 0 000 6z",
   book: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
+  megaphone: "M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46",
   arrow: "M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3",
 };
 
@@ -136,6 +139,7 @@ function formatTimeAgo(value: string): string {
 }
 
 export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
+  const { branding } = useSiteBrand();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -215,13 +219,13 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
       {/* ── Header / greeting ─────────────────────────── */}
       <div className="relative mb-12 rounded-2xl overflow-hidden p-6 sm:p-8"
         style={{
-          background: "linear-gradient(135deg, rgba(196,30,58,0.10) 0%, rgba(255,255,255,0.02) 45%, rgba(212,164,74,0.05) 100%)",
+          background: "linear-gradient(135deg, color-mix(in srgb, var(--color-crimson) 10%, transparent) 0%, rgba(255,255,255,0.02) 45%, color-mix(in srgb, var(--color-gold) 5%, transparent) 100%)",
           border: "1px solid rgba(255,255,255,0.06)",
         }}
       >
         <div
           className="absolute inset-0 pointer-events-none opacity-60"
-          style={{ background: "radial-gradient(circle at 90% 10%, rgba(196,30,58,0.14) 0%, transparent 55%)" }}
+          style={{ background: "radial-gradient(circle at 90% 10%, color-mix(in srgb, var(--color-crimson) 14%, transparent) 0%, transparent 55%)" }}
         />
         <div className="relative z-10 flex flex-col sm:flex-row sm:items-center gap-5">
           <div className="relative shrink-0">
@@ -229,11 +233,11 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
               src={user?.avatar}
               alt={user?.username || "Staff"}
               className="w-16 h-16 rounded-2xl object-cover"
-              style={{ border: "2px solid rgba(212,164,74,0.35)" }}
+              style={{ border: "2px solid color-mix(in srgb, var(--color-gold) 35%, transparent)" }}
             />
             <span
               className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-              style={{ background: "#050507", border: "1px solid rgba(255,255,255,0.12)", color: tier.accent }}
+              style={{ background: "var(--color-bg)", border: "1px solid rgba(255,255,255,0.12)", color: tier.accent }}
             >
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d={ICONS.badge} />
@@ -241,7 +245,7 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
             </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-text-muted text-[11px] tracking-widest uppercase mb-1">Staff Panel · Tunisian Phoenix RP</p>
+            <p className="text-text-muted text-[11px] tracking-widest uppercase mb-1">Staff Panel · {branding.siteName}</p>
             <h1 className="font-display text-3xl sm:text-4xl tracking-wider text-white truncate">
               Welcome back, {user?.username || "Officer"}
             </h1>
@@ -369,7 +373,7 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
                       href={`/tickets/${t.id}`}
                       className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-white/[0.03] transition-colors group"
                     >
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_DOT[t.priority] ?? "#6b5e4a" }} />
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ background: PRIORITY_DOT[t.priority] ?? "var(--color-text-muted)" }} />
                       <span className="flex-1 min-w-0">
                         <span className="block text-sm text-text-dim group-hover:text-white transition-colors truncate">{t.subject}</span>
                         <span className="block text-[11px] text-text-muted truncate">@{t.username}</span>
@@ -400,11 +404,15 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
                 ? [{ label: "Review Applications", href: "/staff-panel/applications", icon: ICONS.document, accent: "#f97316" }]
                 : []),
               { label: "Manage Members", href: "/staff-panel/members", icon: ICONS.shield, accent: "#3b82f6" },
-              { label: "Activity Logs", href: "/staff-panel/logs", icon: ICONS.clock, accent: "#d4a44a" },
+              { label: "Role Manager", href: "/staff-panel/roles", icon: ICONS.badge, accent: "#a78bfa" },
+              { label: "Activity Logs", href: "/staff-panel/logs", icon: ICONS.clock, accent: "var(--color-gold)" },
               ...(data.canEditQuestions
-                ? [{ label: "Config & Editors", href: "/staff-panel/config", icon: ICONS.gear, accent: "#c41e3a" }]
+                ? [{ label: "Config & Editors", href: "/staff-panel/config", icon: ICONS.gear, accent: "var(--color-crimson)" }]
                 : []),
-              { label: "Docs & Guide", href: "/staff-panel/docs", icon: ICONS.book, accent: "#6b5e4a" },
+              ...(data.isSiteOwner
+                ? [{ label: "Mass DM", href: "/staff-panel/broadcast", icon: ICONS.megaphone, accent: "#f43f5e" }]
+                : []),
+              { label: "Docs & Guide", href: "/staff-panel/docs", icon: ICONS.book, accent: "var(--color-text-muted)" },
             ].map((item) => (
               <a
                 key={item.label}
@@ -452,8 +460,8 @@ export default function StaffPanel({ user, roleLevel }: StaffPanelProps) {
                     background:
                       t.count === 0
                         ? "rgba(255,255,255,0.05)"
-                        : "linear-gradient(180deg, rgba(212,164,74,0.8) 0%, rgba(212,164,74,0.2) 100%)",
-                    boxShadow: t.count > 0 ? "0 0 14px rgba(212,164,74,0.18)" : undefined,
+                        : "linear-gradient(180deg, color-mix(in srgb, var(--color-gold) 80%, transparent) 0%, color-mix(in srgb, var(--color-gold) 20%, transparent) 100%)",
+                    boxShadow: t.count > 0 ? "0 0 14px color-mix(in srgb, var(--color-gold) 18%, transparent)" : undefined,
                   }}
                 />
               ))}

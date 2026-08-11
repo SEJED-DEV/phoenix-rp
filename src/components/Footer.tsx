@@ -1,4 +1,7 @@
-export default function Footer() {
+import { getSiteBranding } from "@/lib/site-branding";
+
+export default async function Footer() {
+  const { siteName, siteTagline, discordInvite, serverIp } = await getSiteBranding();
   return (
     <footer id="join" className="relative border-t border-white/[0.04] pb-16 lg:pb-0">
       <div className="fire-line" />
@@ -8,11 +11,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="md:text-center">
             <div className="flex items-center justify-center md:justify-center gap-3.5 mb-5">
-              <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
-              <h3 className="font-display text-xl sm:text-2xl tracking-wider">TUNISIAN PHOENIX RP</h3>
+              <img src="/api/site/logo" alt="Logo" className="w-10 h-10 object-contain" />
+              <h3 className="font-display text-xl sm:text-2xl tracking-wider">{siteName}</h3>
             </div>
             <p className="text-text-muted text-[13px] sm:text-sm leading-relaxed max-w-xs mx-auto md:mx-auto">
-              A Tunisian FiveM Roleplay Community — Born from fire, built by the community.
+              {siteTagline}
             </p>
           </div>
 
@@ -27,6 +30,7 @@ export default function Footer() {
                 ["Gallery", "/gallery"],
                 ["Storyline", "/storyline"],
                 ["FAQ", "/faq"],
+                ["Shop", "/shop"],
                 ["Staff", "/staff"],
                 ["Tickets", "/tickets"],
               ].map(([label, href]) => (
@@ -43,7 +47,7 @@ export default function Footer() {
             <div className="space-y-4">
               <div className="flex justify-center md:justify-center">
                 <a
-                  href="https://discord.gg/rapZCCQBv"
+                  href={discordInvite}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="btn-fire clip-bevel-sm inline-flex items-center gap-2 text-[10px] sm:text-[11px] tracking-widest"
@@ -59,7 +63,7 @@ export default function Footer() {
               <div>
                 <p className="text-text-muted/50 text-[10px] tracking-[0.15em] uppercase mb-1.5">Server IP</p>
                 <code className="bg-white/[0.02] border border-white/[0.05] px-3.5 py-1.5 rounded text-ember text-xs inline-block font-mono">
-                  connect phoenixrp.venice-hosting.com
+                  connect {serverIp}
                 </code>
               </div>
             </div>
@@ -69,8 +73,28 @@ export default function Footer() {
         <div className="fire-line mt-12 mb-6" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-text-muted text-[11px]">
-          <p>&copy; {new Date().getFullYear()} Tunisian Phoenix RP. All rights reserved.</p>
-          <p className="text-text-muted/30">Built with fire.</p>
+          <p>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+          <div className="flex items-center gap-4">
+            <a
+              href={discordInvite}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-text transition-all duration-300"
+            >
+              Join our Discord
+            </a>
+            <p>
+              Made by{" "}
+              <a
+                href="https://sejed.dev"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-ember hover:text-text transition-all duration-300"
+              >
+                sejed.dev
+              </a>
+            </p>
+          </div>
         </div>
       </div>
     </footer>

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { DEFAULT_FAQS, type Faq } from "@/lib/faq.defaults";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 
 function renderFaqAnswer(text: string): ReactNode[] {
   const nodes: ReactNode[] = [];
@@ -35,6 +36,7 @@ function renderFaqAnswer(text: string): ReactNode[] {
 }
 
 export default function FAQ() {
+  const { branding } = useSiteBrand();
   const [faqs, setFaqs] = useState<Faq[]>(DEFAULT_FAQS);
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -68,12 +70,12 @@ export default function FAQ() {
   return (
     <section id="faq" className="relative py-20 sm:py-28 lg:py-32 overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-25%] left-[25%] w-[700px] h-[600px] bg-crimson/[0.05] rounded-full blur-[160px]" />
         <div className="absolute bottom-[-20%] right-[10%] w-[500px] h-[400px] bg-gold/[0.03] rounded-full blur-[140px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-30" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       <div className="relative z-10 max-w-4xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Header */}
@@ -88,7 +90,7 @@ export default function FAQ() {
             <span className="block text-[2.2rem] sm:text-6xl md:text-7xl fire-text">GOT</span>
             <span
               className="block text-[3rem] sm:text-7xl md:text-8xl text-text mt-3"
-              style={{ textShadow: "0 0 80px rgba(196,30,58,0.12)" }}
+              style={{ textShadow: "0 0 80px color-mix(in srgb, var(--color-crimson) 12%, transparent)" }}
             >
               QUESTIONS?
             </span>
@@ -215,7 +217,7 @@ export default function FAQ() {
               Still stuck? Open a ticket — staff responds within 48 hours.
             </p>
             <a
-              href="https://discord.gg/rapZCCQBv"
+              href={branding.discordInvite}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 text-[11px] font-semibold tracking-widest uppercase rounded-lg border border-gold/30 text-gold/80 hover:bg-gold/10 hover:text-gold hover:border-gold/50 transition-all duration-300"

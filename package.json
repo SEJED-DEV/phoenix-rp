@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "bot": "tsx --env-file=.env.local bot.ts",
+    "broadcast": "tsx --env-file=.env.local broadcast-worker.ts",
+    "relay": "tsx --env-file=.env.local relay-worker.ts",
+    "tunnel": "tsx --env-file=.env.local tunnel.ts",
     "start:all": "concurrently \"npm run dev\" \"npm run bot\"",
     "build": "next build",
     "start": "next start",

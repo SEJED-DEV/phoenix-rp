@@ -122,7 +122,7 @@ export default function TicketsPage() {
   return (
     <section className="relative min-h-screen">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-20%] left-[10%] w-[700px] h-[600px] bg-crimson/[0.04] rounded-full blur-[160px]" />
         <div className="absolute bottom-[-20%] right-[10%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
       </div>
@@ -163,7 +163,7 @@ export default function TicketsPage() {
                 key: "total",
                 label: "Total",
                 value: stats.total,
-                color: "#c41e3a",
+                color: "var(--color-crimson)",
                 icon: "M3 6h18M3 12h18M3 18h12",
               },
               {
@@ -184,7 +184,7 @@ export default function TicketsPage() {
                 key: "closed",
                 label: "Closed",
                 value: stats.closed,
-                color: "#6b5e4a",
+                color: "var(--color-text-muted)",
                 icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
               },
             ].map((stat, i) => {

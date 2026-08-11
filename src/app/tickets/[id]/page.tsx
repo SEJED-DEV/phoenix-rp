@@ -290,8 +290,8 @@ export default function TicketDetailPage() {
   // ─── Loading / Auth / Error states ───
   if (authLoading || loading) {
     return (
-      <div className="h-screen flex flex-col bg-[#050507]">
-        <header className="shrink-0 border-b border-white/[0.06] bg-[#050507]/90 z-30">
+      <div className="h-screen flex flex-col bg-[var(--color-bg)]">
+        <header className="shrink-0 border-b border-white/[0.06] bg-[var(--color-bg)]/90 z-30">
           <div className="h-16" />
           <div className="max-w-6xl mx-auto px-4 sm:px-6">
             <div className="flex items-center gap-3 py-2">
@@ -356,7 +356,7 @@ export default function TicketDetailPage() {
   });
 
   return (
-    <div className="h-screen flex flex-col bg-[#050507]">
+    <div className="h-screen flex flex-col bg-[var(--color-bg)]">
       {/* Background blobs */}
       <div className="fixed inset-0 -z-10 pointer-events-none">
         <div className="absolute top-[-20%] left-[10%] w-[700px] h-[600px] bg-crimson/[0.04] rounded-full blur-[160px]" />
@@ -364,7 +364,7 @@ export default function TicketDetailPage() {
       </div>
 
       {/* ─── Top bar (fixed) ─── */}
-      <header className="shrink-0 border-b border-white/[0.06] bg-[#050507]/90 backdrop-blur-xl z-30" style={{ paddingTop: "env(safe-area-inset-top, 0)" }}>
+      <header className="shrink-0 border-b border-white/[0.06] bg-[var(--color-bg)]/90 backdrop-blur-xl z-30" style={{ paddingTop: "env(safe-area-inset-top, 0)" }}>
         {/* Nav offset spacer */}
         <div className="h-16" />
 
@@ -652,7 +652,7 @@ export default function TicketDetailPage() {
       </div>
 
       {/* ─── Input bar (fixed bottom) ─── */}
-      <div className="shrink-0 border-t border-white/[0.06] bg-[#050507]/95 backdrop-blur-xl z-30" style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
+      <div className="shrink-0 border-t border-white/[0.06] bg-[var(--color-bg)]/95 backdrop-blur-xl z-30" style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
         {ticket.status === "closed" ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
             <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.015]">
@@ -738,7 +738,7 @@ export default function TicketDetailPage() {
               <button
                 type="submit"
                 disabled={(!newMessage.trim() && messageFiles.length === 0) || sending}
-                className="shrink-0 h-9 px-5 rounded-xl bg-crimson hover:bg-crimson/80 text-white text-xs font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_rgba(196,30,58,0.3)]"
+                className="shrink-0 h-9 px-5 rounded-xl bg-crimson hover:bg-crimson/80 text-white text-xs font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-[0_0_20px_color-mix(in srgb, var(--color-crimson) 30%, transparent)]"
               >
                 {sending ? (
                   <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

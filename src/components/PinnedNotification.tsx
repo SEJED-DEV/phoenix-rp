@@ -2,11 +2,19 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 import Link from "next/link";
 
-const DISCORD_INVITE = "https://discord.gg/rapZCCQBv";
+interface PinnedConfig {
+  gradient: string;
+  border: string;
+  icon: React.ReactNode;
+  text: string;
+  action: { label: string; href: string; external: boolean } | null;
+}
 
-const CONFIGS = {
+function buildConfigs(discordInvite: string): Record<string, PinnedConfig> {
+  return {
   not_in_server: {
     gradient: "from-crimson/30 via-crimson/15 to-transparent",
     border: "border-crimson/25",
@@ -16,7 +24,7 @@ const CONFIGS = {
       </svg>
     ),
     text: "Join our Discord server to get started",
-    action: { label: "Join Discord", href: DISCORD_INVITE, external: true },
+    action: { label: "Join Discord", href: discordInvite, external: true },
   },
   needs_apply: {
     gradient: "from-ember/30 via-ember/15 to-transparent",
@@ -62,12 +70,16 @@ const CONFIGS = {
     text: "Your account has been permanently blacklisted",
     action: null,
   },
-};
+  };
+}
 
 export default function PinnedNotification() {
   const { status, loading } = useAuth();
+  const { branding } = useSiteBrand();
   const [dismissed, setDismissed] = useState(false);
   const [visible, setVisible] = useState(false);
+
+  const CONFIGS = buildConfigs(branding.discordInvite);
 
   const shouldShow = !loading && status.state !== "logged_out" && status.state !== "whitelisted";
   const config = shouldShow ? CONFIGS[status.state as keyof typeof CONFIGS] : undefined;

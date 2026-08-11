@@ -266,6 +266,85 @@ export function getViewableDepts(userId: string, userRoles: string[], slugs: rea
   return slugs.filter((slug) => canViewApplications(userId, userRoles, slug));
 }
 
+// ─── Application approver grants (can approve / deny) ───
+
+export interface ReviewerGrant {
+  dept: string;
+  granteeType: string;
+  granteeId: string;
+  granteeName: string;
+  grantedBy: string;
+  grantedByUser: string;
+  grantedAt: string;
+}
+
+export function getApproversForDept(dept: string): ReviewerGrant[] {
+  const db = getDb();
+  return db
+    .prepare("SELECT * FROM application_approvers WHERE dept = ? ORDER BY grantedAt DESC")
+    .all(dept) as ReviewerGrant[];
+}
+
+export function getAllApprovers(): Record<string, ReviewerGrant[]> {
+  const db = getDb();
+  const rows = db
+    .prepare("SELECT * FROM application_approvers ORDER BY dept, grantedAt DESC")
+    .all() as ReviewerGrant[];
+  const map: Record<string, ReviewerGrant[]> = {};
+  for (const r of rows) {
+    if (!map[r.dept]) map[r.dept] = [];
+    map[r.dept].push(r);
+  }
+  return map;
+}
+
+export function addApprover(opts: {
+  dept: string;
+  granteeType: "member" | "role";
+  granteeId: string;
+  granteeName: string;
+  grantedBy: string;
+  grantedByUser: string;
+}): void {
+  const db = getDb();
+  db.prepare(`
+    INSERT INTO application_approvers (dept, granteeType, granteeId, granteeName, grantedBy, grantedByUser, grantedAt)
+    VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+    ON CONFLICT(dept, granteeType, granteeId) DO UPDATE SET
+      granteeName = excluded.granteeName,
+      grantedBy = excluded.grantedBy,
+      grantedByUser = excluded.grantedByUser,
+      grantedAt = excluded.grantedAt
+  `).run(
+    opts.dept,
+    opts.granteeType,
+    opts.granteeId,
+    opts.granteeName,
+    opts.grantedBy,
+    opts.grantedByUser,
+  );
+}
+
+export function removeApprover(dept: string, granteeType: string, granteeId: string): void {
+  const db = getDb();
+  db.prepare(
+    "DELETE FROM application_approvers WHERE dept = ? AND granteeType = ? AND granteeId = ?"
+  ).run(dept, granteeType, granteeId);
+}
+
+export function canApproveApplications(
+  userId: string,
+  userRoles: string[],
+  roleLevel: string,
+  dept: string
+): boolean {
+  if (isHighRank(roleLevel)) return true;
+  const approvers = getApproversForDept(dept);
+  return approvers.some((g) =>
+    g.granteeType === "member" ? g.granteeId === userId : userRoles.includes(g.granteeId)
+  );
+}
+
 // ─── Question updates ───
 
 export function updateQuestions(opts: {

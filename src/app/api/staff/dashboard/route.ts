@@ -9,6 +9,7 @@ import {
   isHighRank,
 } from "@/lib/application-questions";
 import { ON_SITE_APPLICATIONS } from "@/lib/apply.config";
+import { isSiteAppearanceOwner } from "@/lib/site-appearance-access";
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,6 +17,7 @@ export async function GET(req: NextRequest) {
     const userId = req.headers.get("x-user-id") || "";
     const roles = getUserRolesFromHeaders(req.headers);
     const isAdmin = isHighRank(roleLevel);
+    const isSiteOwner = await isSiteAppearanceOwner(userId);
 
     const viewable = isAdmin
       ? ON_SITE_APPLICATIONS
@@ -85,6 +87,7 @@ export async function GET(req: NextRequest) {
       roleLevel,
       canReviewApplications,
       canEditQuestions: canEditQuestionsFlag,
+      isSiteOwner,
       totalMembers,
       staffTotal,
       pendingApplications,

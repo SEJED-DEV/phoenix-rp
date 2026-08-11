@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 import { headers } from "next/headers";
 import StaffPanel from "@/components/StaffPanel";
 import { getSession } from "@/lib/auth";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "Staff Panel — Tunisian Phoenix RP",
-  description: "Staff management dashboard.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `Staff Panel — ${siteName}`,
+    description: "Staff management dashboard.",
+  };
+}
 
 export default async function StaffPanelPage() {
   const h = await headers();

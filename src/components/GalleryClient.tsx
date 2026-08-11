@@ -274,9 +274,9 @@ export default function GalleryClient() {
     <section className="relative min-h-screen overflow-hidden bg-bg">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-bg" />
-        <div className="absolute top-[-25%] left-1/2 -translate-x-1/2 w-[900px] h-[700px] rounded-full blur-[220px]" style={{ background: "rgba(196,30,58,0.05)" }} />
+        <div className="absolute top-[-25%] left-1/2 -translate-x-1/2 w-[900px] h-[700px] rounded-full blur-[220px]" style={{ background: "color-mix(in srgb, var(--color-crimson) 5%, transparent)" }} />
       </div>
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_25%,#050507_95%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_25%,var(--color-bg)_95%)] z-[1]" />
 
       {/* Header */}
       <div className="gal-head">

@@ -17,6 +17,7 @@ export function getDb(): Database.Database {
   _db = new Database(DB_PATH);
   _db.pragma("journal_mode = WAL");
   _db.pragma("foreign_keys = ON");
+  _db.pragma("busy_timeout = 5000");
 
   _db.exec(`
     CREATE TABLE IF NOT EXISTS tickets (
@@ -189,6 +190,34 @@ export function getDb(): Database.Database {
     )
   `);
 
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS application_approvers (
+      dept TEXT NOT NULL,
+      granteeType TEXT NOT NULL,
+      granteeId TEXT NOT NULL,
+      granteeName TEXT NOT NULL DEFAULT '',
+      grantedBy TEXT,
+      grantedByUser TEXT,
+      grantedAt TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (dept, granteeType, granteeId)
+    )
+  `);
+
+  // ─── Site Config Grants (delegated branding/content editors) ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS site_config_grants (
+      scope TEXT NOT NULL,
+      granteeType TEXT NOT NULL,
+      granteeId TEXT NOT NULL,
+      granteeName TEXT NOT NULL DEFAULT '',
+      grantedBy TEXT,
+      grantedByUser TEXT,
+      grantedAt TEXT NOT NULL DEFAULT (datetime('now')),
+      PRIMARY KEY (scope, granteeType, granteeId)
+    )
+  `);
+
   // ─── FAQ Questions ───
 
   _db.exec(`
@@ -199,6 +228,76 @@ export function getDb(): Database.Database {
       position INTEGER NOT NULL DEFAULT 0,
       updatedBy TEXT,
       updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  // ─── Shop ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS shop_items (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT NOT NULL DEFAULT '',
+      price TEXT NOT NULL DEFAULT '',
+      image TEXT NOT NULL DEFAULT '',
+      source TEXT NOT NULL DEFAULT 'manual',
+      forumThreadId TEXT,
+      forumUrl TEXT,
+      active INTEGER NOT NULL DEFAULT 1,
+      position INTEGER NOT NULL DEFAULT 0,
+      updatedBy TEXT,
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
+    )
+  `);
+
+  const shopCols = _db.prepare("PRAGMA table_info(shop_items)").all() as { name: string }[];
+  const shopColNames = shopCols.map((c) => c.name);
+  if (!shopColNames.includes("prices")) {
+    _db.exec("ALTER TABLE shop_items ADD COLUMN prices TEXT NOT NULL DEFAULT '[]'");
+  }
+
+  // ─── Mass DM Broadcast (owner-only) ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS broadcast_jobs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      message TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'queued',
+      createdBy TEXT NOT NULL,
+      createdByName TEXT NOT NULL,
+      createdAt TEXT NOT NULL DEFAULT (datetime('now')),
+      startedAt TEXT,
+      completedAt TEXT,
+      totalMembers INTEGER NOT NULL DEFAULT 0,
+      delayMs INTEGER NOT NULL DEFAULT 1500,
+      lastError TEXT
+    )
+  `);
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS broadcast_recipients (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      jobId INTEGER NOT NULL,
+      userId TEXT NOT NULL,
+      username TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      attempts INTEGER NOT NULL DEFAULT 0,
+      error TEXT,
+      updatedAt TEXT,
+      UNIQUE (jobId, userId)
+    )
+  `);
+
+  // ─── Console relay (site / bot / tunnel stdout -> Discord) ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS console_entries (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      source TEXT NOT NULL,
+      level TEXT NOT NULL DEFAULT 'log',
+      content TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     )
   `);
 

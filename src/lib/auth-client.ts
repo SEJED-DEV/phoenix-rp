@@ -3,9 +3,8 @@ export function getDiscordLoginUrl(): string {
     process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI ||
     "https://phoenixrp.online/api/auth/callback";
 
-  const clientId = typeof window !== "undefined"
-    ? "1525591574505853069"
-    : process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || process.env.DISCORD_CLIENT_ID!;
+  const clientId =
+    process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || process.env.DISCORD_CLIENT_ID!;
 
   const params = new URLSearchParams({
     client_id: clientId,

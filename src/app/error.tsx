@@ -12,7 +12,7 @@ export default function Error({
       {/* Background */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-bg" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px]" style={{ background: "rgba(232,93,4,0.06)" }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px]" style={{ background: "color-mix(in srgb, var(--color-ember) 6%, transparent)" }} />
       </div>
 
       <div className="relative z-10 text-center max-w-lg">
@@ -20,8 +20,8 @@ export default function Error({
         <div
           className="w-20 h-20 mx-auto mb-8 flex items-center justify-center rounded-full"
           style={{
-            background: "rgba(232,93,4,0.1)",
-            border: "1px solid rgba(232,93,4,0.2)",
+            background: "color-mix(in srgb, var(--color-ember) 10%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--color-ember) 20%, transparent)",
             animation: "fade-up 0.7s cubic-bezier(0.16,1,0.3,1) both",
           }}
         >

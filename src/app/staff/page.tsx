@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Staff from "@/components/Staff";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "Staff — Tunisian Phoenix RP",
-  description: "Meet the team running Tunisian Phoenix RP.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `Staff — ${siteName}`,
+    description: `Meet the team running ${siteName}.`,
+  };
+}
 
 export default function StaffPage() {
   return (

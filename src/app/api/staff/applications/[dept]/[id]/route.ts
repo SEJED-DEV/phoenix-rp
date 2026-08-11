@@ -3,12 +3,13 @@ import { APPLICATION_SLUGS } from "@/lib/apply.config";
 import { getApplicationById, updateApplication } from "@/lib/applications.db";
 import { getLabelsForDept } from "@/lib/application-questions";
 import { getRoleLevel, getUserRolesFromHeaders } from "@/lib/permissions";
-import { canViewApplications, isHighRank } from "@/lib/application-questions";
+import { canViewApplications, canApproveApplications, isHighRank } from "@/lib/application-questions";
 import { logStaffAction } from "@/lib/activity-log";
 import { notifyApplicationResult, notifyWhitelistResult } from "@/lib/application-notify";
 import {
   addRole,
   WHITELIST_INTERVIEW_ROLE,
+  STAFF_INTERVIEW_ROLE,
   getMemberInfo,
   isMemberInGuild,
   getGuildRoles,
@@ -74,7 +75,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ dept
   return NextResponse.json({
     application,
     labels,
-    canReview: isHighRank(roleLevel),
+    canReview: canApproveApplications(
+      req.headers.get("x-user-id") || "",
+      getUserRolesFromHeaders(req.headers),
+      roleLevel,
+      dept
+    ),
     profile: {
       username: memberInfo?.username || application.username,
       avatar,
@@ -90,14 +96,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ dept
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ dept: string; id: string }> }) {
-  const roleLevel = getRoleLevel(req.headers);
-  if (!isHighRank(roleLevel)) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
   const { dept, id } = await params;
   if (!APPLICATION_SLUGS.includes(dept)) {
     return NextResponse.json({ error: "Invalid department" }, { status: 400 });
+  }
+
+  const roleLevel = getRoleLevel(req.headers);
+  const actorId = req.headers.get("x-user-id") || "";
+  const actorRoles = getUserRolesFromHeaders(req.headers);
+  if (!canApproveApplications(actorId, actorRoles, roleLevel, dept)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   let body: { status?: string; reviewNote?: string };
@@ -120,7 +128,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
     return NextResponse.json({ error: "Application has already been reviewed" }, { status: 409 });
   }
 
-  const actorId = req.headers.get("x-user-id") || "";
   const actorName = req.headers.get("x-user-name") || "";
 
   const updated = updateApplication(dept, parseInt(id, 10), {
@@ -139,6 +146,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ de
     roleGranted = await addRole(application.discordId, WHITELIST_INTERVIEW_ROLE);
     if (!roleGranted) {
       console.error(`[whitelist] Failed to grant interview role ${WHITELIST_INTERVIEW_ROLE} to ${application.discordId}`);
+    }
+  } else if (dept.startsWith("staff_") && body.status === "approved") {
+    roleGranted = await addRole(application.discordId, STAFF_INTERVIEW_ROLE);
+    if (!roleGranted) {
+      console.error(`[staff] Failed to grant interview role ${STAFF_INTERVIEW_ROLE} to ${application.discordId}`);
     }
   }
 

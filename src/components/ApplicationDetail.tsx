@@ -366,7 +366,8 @@ export default function ApplicationDetail() {
                 </>
               ) : application.status === "pending" ? (
                 <p className="text-xs text-text-muted">
-                  You have view access to this application. Only Management &amp; Owner can approve or deny it.
+                  You have view access to this application. Only Management, Owner, or users granted as Application
+                  Approvers can approve or deny it.
                 </p>
               ) : (
                 <div>

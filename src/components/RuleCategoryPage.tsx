@@ -34,12 +34,12 @@ export default function RuleCategoryPage({ cat }: { cat: RuleCategory }) {
   return (
     <section ref={ref} className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 -z-10">
-        <div className="absolute inset-0 bg-[#050507]" />
+        <div className="absolute inset-0 bg-[var(--color-bg)]" />
         <div className="absolute top-[-20%] left-[10%] w-[700px] h-[600px] bg-crimson/[0.05] rounded-full blur-[160px]" />
         <div className="absolute bottom-[-20%] right-[10%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
       </div>
       <div className="absolute inset-0 mosaic-pattern pointer-events-none opacity-20" />
-      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,#050507_85%)] z-[1]" />
+      <div className="absolute inset-0 pointer-events-none bg-[radial-gradient(ellipse_at_center,transparent_20%,var(--color-bg)_85%)] z-[1]" />
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 sm:px-8 py-20 sm:py-28">
         {/* Back link */}
@@ -65,7 +65,7 @@ export default function RuleCategoryPage({ cat }: { cat: RuleCategory }) {
           <div className="aspect-[21/6] sm:aspect-[3/1]">
             <img src={displayImage} alt={cat.name} className="w-full h-full object-cover" />
           </div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#050507] via-[#050507]/30 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/30 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-10">
             <span className="font-display text-4xl sm:text-5xl md:text-6xl fire-text">{cat.name}</span>
             <span className="block text-[11px] text-text-muted mt-2 tracking-wider uppercase">{cat.rules.length} rules</span>

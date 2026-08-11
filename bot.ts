@@ -1,4 +1,7 @@
 import { Client, GatewayIntentBits } from "discord.js";
+import { initConsoleRelay } from "@/lib/console-relay";
+
+initConsoleRelay("bot");
 
 const token = process.env.DISCORD_BOT_TOKEN;
 

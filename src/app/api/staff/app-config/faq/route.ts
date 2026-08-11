@@ -1,23 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getRoleLevel } from "@/lib/permissions";
-import { isHighRank } from "@/lib/application-questions";
+import { getUserRolesFromHeaders } from "@/lib/permissions";
 import { DEFAULT_FAQS, diffFaqs, getFaqs, updateFaqs, type Faq } from "@/lib/faq.config";
+import { canEditSiteConfigScope } from "@/lib/site-config-access";
 import { logStaffAction } from "@/lib/activity-log";
 
-function isAllowed(req: NextRequest): boolean {
-  return isHighRank(getRoleLevel(req.headers));
+async function isAllowed(req: NextRequest): Promise<boolean> {
+  const userId = req.headers.get("x-user-id") || "";
+  const roles = getUserRolesFromHeaders(req.headers);
+  return canEditSiteConfigScope(userId, roles, "content");
 }
 
 export async function GET(req: NextRequest) {
-  if (!isAllowed(req)) {
-    return NextResponse.json({ error: "Only Management & Owner can edit the FAQ" }, { status: 403 });
+  if (!(await isAllowed(req))) {
+    return NextResponse.json({ error: "Only the site owner or granted editors can edit the FAQ" }, { status: 403 });
   }
   return NextResponse.json({ faqs: getFaqs(), defaults: DEFAULT_FAQS });
 }
 
 export async function PUT(req: NextRequest) {
-  if (!isAllowed(req)) {
-    return NextResponse.json({ error: "Only Management & Owner can edit the FAQ" }, { status: 403 });
+  if (!(await isAllowed(req))) {
+    return NextResponse.json({ error: "Only the site owner or granted editors can edit the FAQ" }, { status: 403 });
   }
 
   const username = req.headers.get("x-user-name") || "";

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { useSiteBrand } from "@/contexts/SiteBrandContext";
 
 /* ─────────── Embers (refined) ─────────── */
 function Embers() {
@@ -31,8 +32,8 @@ function Embers() {
             bottom: "-4px",
             width: `${e.size}px`,
             height: `${e.size}px`,
-            background: e.size > 1.8 ? "#f0c850" : e.size > 1.2 ? "#ff6b35" : "#c41e3a",
-            boxShadow: `0 0 ${e.size * 5}px ${e.size > 1.6 ? "#f0c850" : "#ff6b35"}`,
+            background: e.size > 1.8 ? "var(--color-gold-bright)" : e.size > 1.2 ? "var(--color-flame)" : "var(--color-crimson)",
+            boxShadow: `0 0 ${e.size * 5}px ${e.size > 1.6 ? "var(--color-gold-bright)" : "var(--color-flame)"}`,
             animation: `ember-rise ${e.dur}s linear infinite`,
             animationDelay: `${e.delay}s`,
           }}
@@ -61,14 +62,14 @@ function MouseGlow() {
       className="pointer-events-none fixed inset-0 z-40"
       style={{
         background:
-          "radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), rgba(196,30,58,0.04), transparent 60%)",
+          "radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--color-crimson) 4%, transparent), transparent 60%)",
       }}
     />
   );
 }
 
 /* ─────────── Intro: Photo Reel ─────────── */
-function IntroOverlay({ onComplete }: { onComplete: () => void }) {
+function IntroOverlay({ onComplete, siteName }: { onComplete: () => void; siteName: string }) {
   const [media, setMedia] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(-1);
   const [phase, setPhase] = useState<"pulse" | "montage" | "settle" | "reveal" | "done">("pulse");
@@ -156,7 +157,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
     <div
       className="fixed inset-0 z-[200]"
       style={{
-        background: "#050507",
+        background: "var(--color-bg)",
         transition: "opacity 1s cubic-bezier(0.16,1,0.3,1)",
         opacity: phase === "reveal" ? 0 : 1,
         pointerEvents: phase === "reveal" ? "none" : "auto",
@@ -206,7 +207,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
             <div
               className="absolute inset-0"
               style={{
-                background: "radial-gradient(ellipse at center, transparent 25%, rgba(5,5,7,0.5) 65%, #050507 95%)",
+                background: "radial-gradient(ellipse at center, transparent 25%, color-mix(in srgb, var(--color-bg) 50%, transparent) 65%, var(--color-bg) 95%)",
               }}
             />
           </div>
@@ -215,7 +216,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: "radial-gradient(ellipse at center, rgba(196,30,58,0.15) 0%, transparent 70%)",
+              background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--color-crimson) 15%, transparent) 0%, transparent 70%)",
               animation: "intro-crimson-flash 0.25s ease-out forwards",
               zIndex: 5,
             }}
@@ -225,7 +226,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
           <div
             className="absolute left-0 right-0 h-[2px] pointer-events-none z-[7]"
             style={{
-              background: "linear-gradient(90deg, transparent 10%, rgba(196,30,58,0.4) 50%, transparent 90%)",
+              background: "linear-gradient(90deg, transparent 10%, color-mix(in srgb, var(--color-crimson) 40%, transparent) 50%, transparent 90%)",
               animation: "intro-scanline-sweep 0.4s linear forwards",
               top: 0,
             }}
@@ -285,7 +286,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
                 style={{
                   width: `${((currentIndex + 1) / totalImages) * 100}%`,
                   background: "linear-gradient(90deg, var(--color-crimson-deep), var(--color-crimson), var(--color-ember))",
-                  boxShadow: "0 0 8px rgba(196,30,58,0.3)",
+                  boxShadow: "0 0 8px color-mix(in srgb, var(--color-crimson) 30%, transparent)",
                 }}
               />
             </div>
@@ -323,7 +324,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
           <div
             className="absolute inset-0"
             style={{
-              background: "radial-gradient(ellipse at center, rgba(5,5,7,0.4) 0%, rgba(5,5,7,0.75) 50%, #050507 90%)",
+              background: "radial-gradient(ellipse at center, color-mix(in srgb, var(--color-bg) 40%, transparent) 0%, color-mix(in srgb, var(--color-bg) 75%, transparent) 50%, var(--color-bg) 90%)",
             }}
           />
 
@@ -335,7 +336,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
             <div
               className="w-[300px] h-[300px] sm:w-[400px] sm:h-[400px] rounded-full"
               style={{
-                background: "radial-gradient(circle, rgba(196,30,58,0.2) 0%, rgba(196,30,58,0.05) 40%, transparent 70%)",
+                background: "radial-gradient(circle, color-mix(in srgb, var(--color-crimson) 20%, transparent) 0%, color-mix(in srgb, var(--color-crimson) 5%, transparent) 40%, transparent 70%)",
               }}
             />
           </div>
@@ -349,18 +350,18 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
                 style={{ animation: "intro-logo-burn 1s cubic-bezier(0.16,1,0.3,1) 0.15s both" }}
               >
                 <img
-                  src="/logo.png"
+                  src="/api/site/logo"
                   alt=""
                   className="w-16 h-16 sm:w-24 sm:h-24 md:w-28 md:h-28 object-contain relative z-[2]"
                   style={{
-                    filter: "drop-shadow(0 0 30px rgba(196,30,58,0.4)) drop-shadow(0 0 60px rgba(232,93,4,0.15))",
+                    filter: "drop-shadow(0 0 30px color-mix(in srgb, var(--color-crimson) 40%, transparent)) drop-shadow(0 0 60px color-mix(in srgb, var(--color-ember) 15%, transparent))",
                   }}
                 />
                 {/* Burn glow ring behind logo */}
                 <div
                   className="absolute inset-[-30px] rounded-full z-[1]"
                   style={{
-                    background: "radial-gradient(circle, rgba(196,30,58,0.3) 0%, transparent 60%)",
+                    background: "radial-gradient(circle, color-mix(in srgb, var(--color-crimson) 30%, transparent) 0%, transparent 60%)",
                     animation: "intro-burn-ring 1.5s ease-out 0.3s both",
                   }}
                 />
@@ -375,7 +376,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
                   className="font-display text-xl sm:text-3xl md:text-4xl tracking-[0.12em] text-text/90 block"
                   style={{ animation: "intro-text-slide-up 0.7s cubic-bezier(0.16,1,0.3,1) 0.5s both" }}
                 >
-                  TUNISIAN PHOENIX
+                  {siteName}
                 </span>
               </div>
 
@@ -419,7 +420,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
         <div className="absolute inset-0 z-[30] pointer-events-none">
           {/* Top bar */}
           <div
-            className="absolute top-0 left-0 right-0 bg-[#050507]"
+            className="absolute top-0 left-0 right-0 bg-[var(--color-bg)]"
             style={{
               height: shutterOpen ? "0%" : "50%",
               transition: "height 0.9s cubic-bezier(0.76,0,0.24,1)",
@@ -427,7 +428,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
           />
           {/* Bottom bar */}
           <div
-            className="absolute bottom-0 left-0 right-0 bg-[#050507]"
+            className="absolute bottom-0 left-0 right-0 bg-[var(--color-bg)]"
             style={{
               height: shutterOpen ? "0%" : "50%",
               transition: "height 0.9s cubic-bezier(0.76,0,0.24,1) 0.04s",
@@ -444,7 +445,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
             <div
               className="w-[200vw] h-[2px]"
               style={{
-                background: "linear-gradient(90deg, transparent, rgba(196,30,58,0.4), rgba(232,93,4,0.3), rgba(196,30,58,0.4), transparent)",
+                background: "linear-gradient(90deg, transparent, color-mix(in srgb, var(--color-crimson) 40%, transparent), color-mix(in srgb, var(--color-ember) 30%, transparent), color-mix(in srgb, var(--color-crimson) 40%, transparent), transparent)",
               }}
             />
           </div>
@@ -456,6 +457,7 @@ function IntroOverlay({ onComplete }: { onComplete: () => void }) {
 
 /* ─────────── Main Hero ─────────── */
 export default function Hero() {
+  const { branding } = useSiteBrand();
   const [loaded, setLoaded] = useState(false);
   const [introDone, setIntroDone] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -486,10 +488,14 @@ export default function Hero() {
     return () => window.removeEventListener("scroll", handleParallax);
   }, [handleParallax]);
 
+  const heroNameParts = (branding.siteName || "Tunisian Phoenix RP").toUpperCase().split(" ");
+  const heroNameFirst = heroNameParts[0] || "TUNISIAN";
+  const heroNameSecond = heroNameParts.slice(1).join(" ") || "RP";
+
   return (
     <>
       <MouseGlow />
-      {!introDone && <IntroOverlay onComplete={handleIntroComplete} />}
+      {!introDone && <IntroOverlay onComplete={handleIntroComplete} siteName={branding.siteName} />}
 
       <style jsx global>{`
         @keyframes ember-rise {
@@ -511,8 +517,8 @@ export default function Hero() {
           100% { transform: scaleX(1); }
         }
         @keyframes logo-glow {
-          0%, 100% { filter: drop-shadow(0 0 30px rgba(196,30,58,0.3)) drop-shadow(0 0 60px rgba(232,93,4,0.1)); }
-          50% { filter: drop-shadow(0 0 50px rgba(196,30,58,0.5)) drop-shadow(0 0 100px rgba(232,93,4,0.2)); }
+          0%, 100% { filter: drop-shadow(0 0 30px color-mix(in srgb, var(--color-crimson) 30%, transparent)) drop-shadow(0 0 60px color-mix(in srgb, var(--color-ember) 10%, transparent)); }
+          50% { filter: drop-shadow(0 0 50px color-mix(in srgb, var(--color-crimson) 50%, transparent)) drop-shadow(0 0 100px color-mix(in srgb, var(--color-ember) 20%, transparent)); }
         }
         @keyframes scroll-bob {
           0%, 100% { transform: translateY(0); opacity: 0.3; }
@@ -528,9 +534,9 @@ export default function Hero() {
         }
         /* Intro: initial pulse */
         @keyframes intro-pulse-burst {
-          0% { transform: scale(0.5); opacity: 0.8; box-shadow: 0 0 0 0 rgba(196,30,58,0.5); }
-          50% { transform: scale(3); opacity: 0.4; box-shadow: 0 0 40px 20px rgba(196,30,58,0.15); }
-          100% { transform: scale(8); opacity: 0; box-shadow: 0 0 80px 40px rgba(196,30,58,0); }
+          0% { transform: scale(0.5); opacity: 0.8; box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-crimson) 50%, transparent); }
+          50% { transform: scale(3); opacity: 0.4; box-shadow: 0 0 40px 20px color-mix(in srgb, var(--color-crimson) 15%, transparent); }
+          100% { transform: scale(8); opacity: 0; box-shadow: 0 0 80px 40px color-mix(in srgb, var(--color-crimson) 0%, transparent); }
         }
 
         /* Intro: image slide directions */
@@ -646,8 +652,8 @@ export default function Hero() {
           inset: 0;
           z-index: 1;
           background:
-            linear-gradient(0deg, rgba(5,5,7,1) 0%, rgba(5,5,7,0.5) 30%, rgba(5,5,7,0.2) 50%, rgba(5,5,7,0.6) 80%, rgba(5,5,7,0.95) 100%),
-            linear-gradient(90deg, rgba(5,5,7,0.6) 0%, transparent 30%, transparent 70%, rgba(5,5,7,0.6) 100%);
+            linear-gradient(0deg, color-mix(in srgb, var(--color-bg) 100%, transparent) 0%, color-mix(in srgb, var(--color-bg) 50%, transparent) 30%, color-mix(in srgb, var(--color-bg) 20%, transparent) 50%, color-mix(in srgb, var(--color-bg) 60%, transparent) 80%, color-mix(in srgb, var(--color-bg) 95%, transparent) 100%),
+            linear-gradient(90deg, color-mix(in srgb, var(--color-bg) 60%, transparent) 0%, transparent 30%, transparent 70%, color-mix(in srgb, var(--color-bg) 60%, transparent) 100%);
         }
       `}</style>
 
@@ -667,7 +673,7 @@ export default function Hero() {
             playsInline
             preload="auto"
           />
-          <div className="absolute inset-0 bg-[#050507] -z-10">
+          <div className="absolute inset-0 bg-[var(--color-bg)] -z-10">
             <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[1000px] h-[800px] bg-crimson/[0.08] rounded-full blur-[180px]" />
             <div className="absolute bottom-[-25%] left-[15%] w-[600px] h-[500px] bg-ember/[0.04] rounded-full blur-[150px]" />
           </div>
@@ -690,8 +696,8 @@ export default function Hero() {
             >
               <div className="relative inline-block group">
                 <img
-                  src="/logo.png"
-                  alt="Tunisian Phoenix RP"
+                  src="/api/site/logo"
+                  alt={branding.siteName}
                   className="w-28 h-28 sm:w-36 sm:h-36 md:w-44 md:h-44 lg:w-52 lg:h-52 object-contain transition-all duration-700 group-hover:scale-105"
                   style={{ animation: "logo-glow 5s ease-in-out infinite" }}
                 />
@@ -704,10 +710,10 @@ export default function Hero() {
             <div style={{ animation: introDone && loaded ? "hero-fade-up 1.1s cubic-bezier(0.16,1,0.3,1) 0.4s both" : "none" }}>
               <h1 className="font-display leading-[0.82] tracking-[0.04em] mb-1">
                 <span className="block text-[3.2rem] sm:text-7xl md:text-8xl lg:text-9xl xl:text-[10rem] fire-text">
-                  TUNISIAN
+                  {heroNameFirst}
                 </span>
-                <span className="block text-[4.2rem] sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] text-text" style={{ textShadow: "0 0 80px rgba(196,30,58,0.15), 0 0 160px rgba(232,93,4,0.05)" }}>
-                  PHOENIX
+                <span className="block text-[4.2rem] sm:text-8xl md:text-9xl lg:text-[10rem] xl:text-[12rem] text-text" style={{ textShadow: "0 0 80px color-mix(in srgb, var(--color-crimson) 15%, transparent), 0 0 160px color-mix(in srgb, var(--color-ember) 5%, transparent)" }}>
+                  {heroNameSecond}
                 </span>
               </h1>
             </div>
@@ -750,12 +756,12 @@ export default function Hero() {
                 <div className="w-2 h-2 rounded-full bg-green-500" style={{ animation: "status-pulse 2s ease-in-out infinite" }} />
                 <span className="text-[10px] sm:text-[11px] tracking-[0.12em] uppercase text-text-muted font-medium">Server Online</span>
                 <span className="text-[10px] text-text-dim/30 mx-0.5">|</span>
-                <span className="text-[10px] sm:text-[11px] tracking-wide text-text-dim/40 font-mono">phoenixrp.venice-hosting.com</span>
+                <span className="text-[10px] sm:text-[11px] tracking-wide text-text-dim/40 font-mono">{branding.serverIp}</span>
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3 w-full">
                 <a
-                  href="https://discord.gg/rapZCCQBv"
+                  href={branding.discordInvite}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="hero-btn-primary group flex-1"
@@ -769,7 +775,7 @@ export default function Hero() {
                 </a>
 
                 <a
-                  href="fivem://connect/phoenixrp.venice-hosting.com"
+                  href={`fivem://connect/${branding.serverIp}`}
                   className="hero-btn-secondary group flex-1"
                 >
                   <span className="hero-btn-inner">

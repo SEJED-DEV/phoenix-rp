@@ -9,12 +9,12 @@ export default function GlobalError({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0, background: "#050507", color: "#f5f0e8", fontFamily: "system-ui, sans-serif" }}>
+      <body style={{ margin: 0, background: "var(--color-bg)", color: "var(--color-text)", fontFamily: "system-ui, sans-serif" }}>
         <div className="min-h-screen flex flex-col items-center justify-center px-6 relative overflow-hidden">
           {/* Background */}
           <div className="absolute inset-0 -z-10">
-            <div className="absolute inset-0" style={{ background: "#050507" }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px]" style={{ background: "rgba(196,30,58,0.08)" }} />
+            <div className="absolute inset-0" style={{ background: "var(--color-bg)" }} />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full blur-[200px]" style={{ background: "color-mix(in srgb, var(--color-crimson) 8%, transparent)" }} />
           </div>
 
           <div className="relative z-10 text-center max-w-lg">
@@ -27,7 +27,7 @@ export default function GlobalError({
                 letterSpacing: "0.02em",
                 lineHeight: 1,
                 margin: 0,
-                background: "linear-gradient(135deg, #f0c850 0%, #ff6b35 35%, #c41e3a 70%, #8b1428 100%)",
+                background: "linear-gradient(135deg, var(--color-gold-bright) 0%, var(--color-flame) 35%, var(--color-crimson) 70%, var(--color-crimson-deep) 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -39,13 +39,13 @@ export default function GlobalError({
             {/* Divider */}
             <div
               className="w-16 h-px mx-auto my-6"
-              style={{ background: "linear-gradient(90deg, transparent, #c41e3a, transparent)" }}
+              style={{ background: "linear-gradient(90deg, transparent, var(--color-crimson), transparent)" }}
             />
 
-            <p style={{ fontSize: 14, color: "#6b5e4a", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
+            <p style={{ fontSize: 14, color: "var(--color-text-muted)", letterSpacing: "0.2em", textTransform: "uppercase", fontWeight: 600 }}>
               Internal Server Error
             </p>
-            <p style={{ fontSize: 13, color: "#6b5e4a", marginTop: 8, marginBottom: 40 }}>
+            <p style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 8, marginBottom: 40 }}>
               Something broke on our end. Please try again.
             </p>
 
@@ -56,9 +56,9 @@ export default function GlobalError({
                 alignItems: "center",
                 gap: 8,
                 padding: "14px 32px",
-                background: "linear-gradient(135deg, #c41e3a, #8b1428)",
+                background: "linear-gradient(135deg, var(--color-crimson), var(--color-crimson-deep))",
                 color: "white",
-                border: "1px solid rgba(196,30,58,0.3)",
+                border: "1px solid color-mix(in srgb, var(--color-crimson) 30%, transparent)",
                 borderRadius: 9999,
                 fontSize: 11,
                 fontWeight: 700,

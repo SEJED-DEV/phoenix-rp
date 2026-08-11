@@ -1,16 +1,3 @@
-const { execSync } = require("child_process");
-
-const cloudflaredPath = (() => {
-  try {
-    const out = execSync("where cloudflared", { shell: "cmd.exe" })
-      .toString()
-      .trim()
-      .split(/\r?\n/)[0];
-    if (out) return out;
-  } catch {}
-  return "cloudflared";
-})();
-
 module.exports = {
   apps: [
     {
@@ -34,10 +21,32 @@ module.exports = {
       max_restarts: 10,
     },
     {
-      name: "tunnel",
-      script: cloudflaredPath,
-      args: "tunnel run phoenix-site",
+      name: "broadcast",
+      interpreter: "node",
+      script: "node_modules/tsx/dist/cli.cjs",
+      args: "--env-file=.env.local broadcast-worker.ts",
       cwd: __dirname,
+      env: { NODE_ENV: "production" },
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
+    {
+      name: "relay",
+      interpreter: "node",
+      script: "node_modules/tsx/dist/cli.cjs",
+      args: "--env-file=.env.local relay-worker.ts",
+      cwd: __dirname,
+      env: { NODE_ENV: "production" },
+      restart_delay: 3000,
+      max_restarts: 10,
+    },
+    {
+      name: "tunnel",
+      interpreter: "node",
+      script: "node_modules/tsx/dist/cli.cjs",
+      args: "--env-file=.env.local tunnel.ts",
+      cwd: __dirname,
+      env: { NODE_ENV: "production" },
       restart_delay: 3000,
       max_restarts: 10,
     },

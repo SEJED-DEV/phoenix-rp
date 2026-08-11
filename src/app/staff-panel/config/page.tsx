@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import ConfigPage from "@/components/ConfigPage";
+import ConfigHub from "@/components/ConfigHub";
 import { isHighRank, canEditQuestions } from "@/lib/application-questions";
 import { getUserRolesFromHeaders } from "@/lib/permissions";
 import { ON_SITE_APPLICATIONS } from "@/lib/apply.config";
 
 export const metadata: Metadata = {
   title: "Config — Staff Panel",
-  description: "Manage application question access and editors.",
+  description: "Manage application question editors, reviewers and approvers, plus site-wide shop and FAQ content.",
 };
 
 export default async function ConfigPageRoute() {
@@ -39,7 +39,7 @@ export default async function ConfigPageRoute() {
 
   return (
     <main className="pt-16 lg:pt-[64px] min-h-screen bg-bg">
-      <ConfigPage />
+      <ConfigHub />
     </main>
   );
 }

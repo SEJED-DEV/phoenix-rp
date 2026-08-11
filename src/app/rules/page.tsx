@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import Rules from "@/components/Rules";
+import { getSiteBranding } from "@/lib/site-branding";
 
-export const metadata: Metadata = {
-  title: "Rules — Tunisian Phoenix RP",
-  description: "Server rules and community guidelines for Tunisian Phoenix RP.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const { siteName } = await getSiteBranding();
+  return {
+    title: `Rules — ${siteName}`,
+    description: `Server rules and community guidelines for ${siteName}.`,
+  };
+}
 
 export default function RulesPage() {
   return (
