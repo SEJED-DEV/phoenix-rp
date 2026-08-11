@@ -4,12 +4,18 @@ const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN!;
 // In-memory caches for expensive Discord reads. Fetching the full member list
 // is paginated (1000 per request) and was previously re-done on every page/API
 // hit, which made /staff, the staff dashboard, and member search lag badly.
-const MEMBER_LIST_CACHE_TTL_MS = 60_000;
+const MEMBER_LIST_CACHE_TTL_MS = 300_000;
 const MEMBER_COUNT_CACHE_TTL_MS = 60_000;
+const GUILD_ROLES_CACHE_TTL_MS = 60_000;
+const RETRY_BACKOFF_MS = 30_000;
 
 let memberListCache: { at: number; members: RawMember[] } | null = null;
 let memberListInflight: Promise<RawMember[]> | null = null;
+let memberListRetryAt = 0;
 let memberCountCache: { at: number; value: number } | null = null;
+let guildRolesCache: { at: number; roles: GuildRole[] } | null = null;
+let guildRolesInflight: Promise<GuildRole[]> | null = null;
+let guildRolesRetryAt = 0;
 
 export const ROLES = {
   WHITELISTED: "1533959429697966233",
@@ -258,17 +264,49 @@ export async function removeRole(userId: string, roleId: string): Promise<boolea
   }
 }
 
-export async function getGuildRoles(): Promise<{ id: string; name: string; color: number; position: number; managed: boolean }[]> {
-  try {
-    const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/roles`;
-    const res = await fetch(url, {
-      headers: { Authorization: `Bot ${BOT_TOKEN}` },
-    });
-    if (!res.ok) return [];
-    return await res.json();
-  } catch {
-    return [];
+export interface GuildRole {
+  id: string;
+  name: string;
+  color: number;
+  position: number;
+  managed: boolean;
+}
+
+export async function getGuildRoles(): Promise<GuildRole[]> {
+  const now = Date.now();
+  if (guildRolesCache && now - guildRolesCache.at < GUILD_ROLES_CACHE_TTL_MS) {
+    return guildRolesCache.roles;
   }
+  if (guildRolesInflight) return guildRolesInflight;
+  if (now < guildRolesRetryAt) {
+    return guildRolesCache?.roles ?? [];
+  }
+
+  guildRolesInflight = (async (): Promise<GuildRole[]> => {
+    try {
+      const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/roles`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bot ${BOT_TOKEN}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) {
+        guildRolesRetryAt = Date.now() + RETRY_BACKOFF_MS;
+        return guildRolesCache?.roles ?? [];
+      }
+      const roles = (await res.json()) as GuildRole[];
+      if (roles.length > 0) {
+        guildRolesCache = { at: Date.now(), roles };
+      }
+      return roles;
+    } catch {
+      guildRolesRetryAt = Date.now() + RETRY_BACKOFF_MS;
+      return guildRolesCache?.roles ?? [];
+    } finally {
+      guildRolesInflight = null;
+    }
+  })();
+
+  return guildRolesInflight;
 }
 
 export async function sendMessage(channelId: string, content: string): Promise<boolean> {
@@ -377,42 +415,63 @@ export async function getStaffCount(): Promise<number> {
 }
 
 async function fetchAllMembers(): Promise<RawMember[]> {
-  if (memberListCache && Date.now() - memberListCache.at < MEMBER_LIST_CACHE_TTL_MS) {
+  const now = Date.now();
+
+  // Fresh cache — return instantly, no Discord call.
+  if (memberListCache && now - memberListCache.at < MEMBER_LIST_CACHE_TTL_MS) {
     return memberListCache.members;
   }
-  if (memberListInflight) return memberListInflight;
 
-  memberListInflight = (async () => {
-    try {
-      const allMembers: RawMember[] = [];
-      let after = "0";
-
-      while (true) {
-        const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bot ${BOT_TOKEN}` },
-          signal: AbortSignal.timeout(10_000),
-        });
-        if (!res.ok) break;
-        const batch: RawMember[] = await res.json();
-        if (batch.length === 0) break;
-        allMembers.push(...batch);
-        after = batch[batch.length - 1].user.id;
-        if (batch.length < 1000) break;
-      }
-
-      // Only cache a healthy result — never an empty list (Discord outage).
-      // Otherwise a failed fetch would make /staff report no staff for 60s.
-      if (allMembers.length > 0) {
-        memberListCache = { at: Date.now(), members: allMembers };
-      }
-      return allMembers;
-    } finally {
-      memberListInflight = null;
+  // Stale cache — serve it immediately and refresh in the background, so a
+  // search never blocks on Discord. Concurrent calls share one refresh.
+  if (memberListCache) {
+    if (now >= memberListRetryAt && !memberListInflight) {
+      memberListInflight = refreshMemberList();
     }
-  })();
+    return memberListCache.members;
+  }
 
+  // No cache at all — fetch (coalesced across callers), but back off briefly
+  // after a failure so a 429/outage can't trigger a retry on every search.
+  if (now < memberListRetryAt) return [];
+  if (memberListInflight) return memberListInflight;
+  memberListInflight = refreshMemberList();
   return memberListInflight;
+}
+
+async function refreshMemberList(): Promise<RawMember[]> {
+  try {
+    const allMembers: RawMember[] = [];
+    let after = "0";
+
+    while (true) {
+      const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members?limit=1000&after=${after}`;
+      const res = await fetch(url, {
+        headers: { Authorization: `Bot ${BOT_TOKEN}` },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (!res.ok) {
+        memberListRetryAt = Date.now() + RETRY_BACKOFF_MS;
+        return memberListCache?.members ?? allMembers;
+      }
+      const batch: RawMember[] = await res.json();
+      if (batch.length === 0) break;
+      allMembers.push(...batch);
+      after = batch[batch.length - 1].user.id;
+      if (batch.length < 1000) break;
+    }
+
+    // Only cache a healthy result — never an empty list (Discord outage).
+    if (allMembers.length > 0) {
+      memberListCache = { at: Date.now(), members: allMembers };
+    }
+    return allMembers;
+  } catch {
+    memberListRetryAt = Date.now() + RETRY_BACKOFF_MS;
+    return memberListCache?.members ?? [];
+  } finally {
+    memberListInflight = null;
+  }
 }
 
 export interface ForumPost {

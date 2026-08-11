@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 
 interface Member {
   userId: string;
@@ -36,6 +36,13 @@ export default function MembersPanel() {
   const [punishReason, setPunishReason] = useState("");
   const [punishing, setPunishing] = useState(false);
   const [punishResult, setPunishResult] = useState<{ success: boolean; message: string } | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, []);
 
   const search = useCallback(async (q: string) => {
     if (q.length < 2) {
@@ -53,6 +60,16 @@ export default function MembersPanel() {
       setSearching(false);
     }
   }, []);
+
+  const onQueryChange = (value: string) => {
+    setQuery(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (value.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    searchTimeout.current = setTimeout(() => search(value.trim()), 250);
+  };
 
   const getExistingPunishments = (roleIds: string[]): PunishmentRole[] => {
     return PUNISHMENT_ROLES.filter((pr) => roleIds.includes(pr.id));
@@ -124,10 +141,7 @@ export default function MembersPanel() {
             <input
               type="text"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                search(e.target.value);
-              }}
+              onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Search by username..."
               className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-text-muted/40 text-sm focus:outline-none focus:border-crimson/40 transition-colors"
             />

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 
 interface Member {
   userId: string;
@@ -34,6 +34,13 @@ export default function RoleManager() {
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{ success: boolean; message: string } | null>(null);
+  const searchTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    };
+  }, []);
 
   useEffect(() => {
     fetch("/api/staff/roles")
@@ -58,6 +65,16 @@ export default function RoleManager() {
       setSearching(false);
     }
   }, []);
+
+  const onQueryChange = (value: string) => {
+    setQuery(value);
+    if (searchTimeout.current) clearTimeout(searchTimeout.current);
+    if (value.trim().length < 2) {
+      setResults([]);
+      return;
+    }
+    searchTimeout.current = setTimeout(() => search(value.trim()), 250);
+  };
 
   const manageableSet = new Set((rolesData?.manageable ?? []).map((r) => r.id));
 
@@ -168,10 +185,7 @@ export default function RoleManager() {
             <input
               type="text"
               value={query}
-              onChange={(e) => {
-                setQuery(e.target.value);
-                search(e.target.value);
-              }}
+              onChange={(e) => onQueryChange(e.target.value)}
               placeholder="Search by username..."
               className="w-full pl-11 pr-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white placeholder:text-text-muted/40 text-sm focus:outline-none focus:border-crimson/40 transition-colors"
             />
