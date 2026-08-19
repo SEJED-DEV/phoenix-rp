@@ -23,6 +23,7 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [confirming, setConfirming] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -37,6 +38,11 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!type || !subject || !description) return;
+    setConfirming(true);
+  };
+
+  const handleConfirmSubmit = async () => {
     setError("");
     setSubmitting(true);
 
@@ -64,8 +70,12 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
       setError("Something went wrong. Please try again.");
     } finally {
       setSubmitting(false);
+      setConfirming(false);
     }
   };
+
+  const selectedType = availableTypes.find((t) => t.slug === type);
+  const selectedTypeStyle = selectedType ? getTicketTypeStyle(selectedType) : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -232,6 +242,45 @@ export default function TicketForm({ availableTypes, openTicketTypes = [], onSuc
             </button>
           </div>
         </form>
+
+        {/* Confirmation overlay */}
+        {confirming && (
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-[#0c0c10]/95 backdrop-blur-sm rounded-2xl">
+            <div className="p-6 max-w-sm text-center">
+              <div className="w-12 h-12 mx-auto mb-4 rounded-full flex items-center justify-center" style={{ background: selectedTypeStyle ? selectedTypeStyle.bg : "rgba(255,255,255,0.05)", border: `1px solid ${selectedTypeStyle ? selectedTypeStyle.border : "rgba(255,255,255,0.1)"}` }}>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: selectedTypeStyle?.color }}>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={selectedType?.icon || ""} />
+                </svg>
+              </div>
+              <h3 className="font-display text-lg text-white mb-2">Confirm Ticket Type</h3>
+              <p className="text-text-muted text-sm mb-1">
+                You&apos;re opening a{" "}
+                <span className="font-semibold" style={{ color: selectedTypeStyle?.color }}>{selectedType?.name}</span>
+                {" "}ticket.
+              </p>
+              <p className="text-text-muted/50 text-xs mb-6">
+                This is your last chance to change the ticket type. Once submitted, the type cannot be changed by you.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setConfirming(false)}
+                  className="flex-1 px-4 py-2.5 rounded-xl border border-white/[0.08] text-text-dim text-sm font-semibold hover:border-white/[0.15] hover:text-text transition-all"
+                >
+                  Go Back
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmSubmit}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2.5 rounded-xl bg-crimson hover:bg-crimson/80 text-white text-sm font-semibold transition-colors disabled:opacity-40"
+                >
+                  {submitting ? "Submitting..." : "Confirm & Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

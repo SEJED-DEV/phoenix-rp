@@ -46,6 +46,11 @@ export function getAttachmentDiskPath(ticketId: string, storedName: string): str
   return path.join(ticketDir(ticketId), storedName);
 }
 
+/** Removes a ticket's entire upload folder from disk (attachments are already deleted from the DB). */
+export function deleteTicketFiles(ticketId: string): void {
+  fs.rmSync(ticketDir(ticketId), { recursive: true, force: true });
+}
+
 export function validateUploadFiles(files: UploadFile[]): string | null {
   if (files.length === 0) return null;
   if (files.length > MAX_FILES_PER_UPLOAD) {

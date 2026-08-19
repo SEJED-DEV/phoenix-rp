@@ -12,7 +12,10 @@ export default async function SiteConfigPage() {
   const userId = h.get("x-user-id") || "";
   const userRoles = getUserRolesFromHeaders(h);
   const isOwner = await isSiteAppearanceOwner(userId);
-  const canEdit = isOwner || canEditSiteScope(userId, userRoles, "links");
+  const canEdit =
+    isOwner ||
+    canEditSiteScope(userId, userRoles, "links") ||
+    canEditSiteScope(userId, userRoles, "site");
 
   if (!canEdit) {
     return (

@@ -1,7 +1,7 @@
 import { getDb } from "./db";
 import { isSiteAppearanceOwner } from "./site-appearance-access";
 
-export const SITE_CONFIG_SCOPES = ["links", "content"] as const;
+export const SITE_CONFIG_SCOPES = ["site", "links", "content", "gallery"] as const;
 export type SiteConfigScope = (typeof SITE_CONFIG_SCOPES)[number];
 
 export interface SiteConfigGrant {

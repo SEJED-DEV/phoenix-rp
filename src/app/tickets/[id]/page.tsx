@@ -6,6 +6,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { TICKET_TYPES, getTicketTypeStyle } from "@/lib/tickets.config";
 import type { Ticket } from "@/components/TicketList";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Skeleton } from "@/components/Skeleton";
 
 interface TicketMessage {
@@ -141,6 +142,17 @@ export default function TicketDetailPage() {
   const [remindMsg, setRemindMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const [flash, setFlash] = useState(false);
   const [jumpedToLatest, setJumpedToLatest] = useState(false);
+  const [deletePolicy, setDeletePolicy] = useState<"staff-only" | "staff-or-owner">("staff-only");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+  const [isArchived, setIsArchived] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [showPurgeConfirm, setShowPurgeConfirm] = useState(false);
+  const [purging, setPurging] = useState(false);
+  const [purgeError, setPurgeError] = useState("");
+  const [pendingTypeChange, setPendingTypeChange] = useState<string | null>(null);
+  const [archivedNote, setArchivedNote] = useState<{ ok: boolean; text: string } | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollBottomRef = useRef(false);
@@ -163,6 +175,8 @@ export default function TicketDetailPage() {
       setMessages(data.messages || []);
       setAttachments(data.attachments || []);
       setPagination(data.pagination);
+      if (data.deletePolicy) setDeletePolicy(data.deletePolicy);
+      setIsArchived(!!data.isArchived);
 
       if (scrollToBottom) {
         scrollBottomRef.current = true;
@@ -191,10 +205,10 @@ export default function TicketDetailPage() {
 
   // Poll — only latest page
   useEffect(() => {
-    if (authLoading || loading || error) return;
+    if (authLoading || loading || error || isArchived) return;
     const interval = setInterval(() => fetchTicket(pagination.page), 3000);
     return () => clearInterval(interval);
-  }, [authLoading, loading, error, fetchTicket, pagination.page]);
+  }, [authLoading, loading, error, isArchived, fetchTicket, pagination.page]);
 
   const goToPage = (p: number) => {
     const clamped = Math.max(1, Math.min(p, pagination.totalPages));
@@ -224,6 +238,24 @@ export default function TicketDetailPage() {
       });
       if (res.ok) { const d = await res.json(); setTicket(d.ticket); }
     } finally { setUpdating(false); }
+  };
+
+  const handleTypeChange = async (newType: string) => {
+    if (newType === ticket?.type) return;
+    setPendingTypeChange(newType);
+  };
+
+  const confirmTypeChange = async () => {
+    if (!pendingTypeChange) return;
+    setUpdating(true);
+    try {
+      const res = await fetch(`/api/tickets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: pendingTypeChange }),
+      });
+      if (res.ok) { const d = await res.json(); setTicket(d.ticket); }
+    } finally { setUpdating(false); setPendingTypeChange(null); }
   };
 
   const handleAssign = async () => {
@@ -262,6 +294,140 @@ export default function TicketDetailPage() {
     } catch {
       setRemindMsg({ ok: false, text: "Failed to send reminder" });
     } finally { setReminding(false); }
+  };
+
+  const canDeleteTicket =
+    !!ticket && (isStaff || (deletePolicy === "staff-or-owner" && !!user && ticket.userId === user.id));
+
+  const handleDelete = async (reason?: string) => {
+    if (!ticket || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        router.push("/tickets");
+      } else {
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error || "Failed to delete ticket.");
+      }
+    } catch {
+      setDeleteError("Failed to delete ticket.");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!ticket || restoring) return;
+    setRestoring(true);
+    setArchivedNote(null);
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}/restore`, { method: "POST" });
+      if (res.ok) {
+        const d = await res.json();
+        setTicket(d.ticket);
+        setIsArchived(false);
+        setArchivedNote({ ok: true, text: "Ticket restored to the active list." });
+      } else {
+        const d = await res.json().catch(() => null);
+        setArchivedNote({ ok: false, text: d?.error || "Failed to restore ticket." });
+      }
+    } catch {
+      setArchivedNote({ ok: false, text: "Failed to restore ticket." });
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const confirmPurge = async (reason?: string) => {
+    if (!ticket || purging) return;
+    setPurging(true);
+    setPurgeError("");
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}/purge`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        router.push("/tickets");
+      } else {
+        const d = await res.json().catch(() => null);
+        setPurgeError(d?.error || "Failed to purge ticket.");
+      }
+    } catch {
+      setPurgeError("Failed to purge ticket.");
+    } finally {
+      setPurging(false);
+    }
+  };
+
+  const downloadTranscript = async () => {
+    if (!ticket) return;
+    try {
+      const res = await fetch(`/api/tickets/${ticket.id}?transcript=1`);
+      if (!res.ok) {
+        setArchivedNote({ ok: false, text: "Failed to load the transcript." });
+        return;
+      }
+      const data = await res.json();
+      const t: Ticket = data.ticket;
+      const msgs: TicketMessage[] = data.messages || [];
+      const atts: TicketAttachment[] = data.attachments || [];
+
+      const typeInfo = TICKET_TYPES.find((x) => x.slug === t.type);
+      const lines: string[] = [];
+      lines.push("PHOENIX TICKET TRANSCRIPT");
+      lines.push("=========================");
+      lines.push("");
+      lines.push(`Ticket: #${t.id.slice(0, 8)}`);
+      lines.push(`Type: ${typeInfo ? typeInfo.name : t.type}`);
+      lines.push(`Subject: ${t.subject}`);
+      lines.push(`Status: ${t.status}${t.archivedAt ? " (archived)" : ""}`);
+      lines.push(`Priority: ${t.priority}`);
+      lines.push(`Opened by: @${t.username}`);
+      lines.push(`Created: ${formatFullDate(t.createdAt)}`);
+      lines.push("");
+      lines.push("DESCRIPTION");
+      lines.push("-----------");
+      lines.push(t.description);
+      lines.push("");
+      lines.push("MESSAGES");
+      lines.push("--------");
+      if (msgs.length === 0) {
+        lines.push("(no messages)");
+      } else {
+        for (const m of msgs) {
+          const tag = m.isInternal ? " [STAFF NOTE]" : "";
+          lines.push(`[${formatMsgTime(m.createdAt)}] @${m.username}${tag}`);
+          lines.push(m.content);
+          lines.push("");
+        }
+      }
+      if (atts.length > 0) {
+        lines.push("ATTACHMENTS");
+        lines.push("-----------");
+        for (const a of atts) lines.push(`- ${a.fileName} (${formatBytes(a.size)})`);
+      }
+
+      const blob = new Blob([lines.join("\n")], { type: "text/plain;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ticket-${t.id.slice(0, 8)}-transcript.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      setArchivedNote({ ok: true, text: "Transcript downloaded." });
+    } catch {
+      setArchivedNote({ ok: false, text: "Failed to load the transcript." });
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
@@ -365,6 +531,9 @@ export default function TicketDetailPage() {
 
       {/* ─── Top bar (fixed) ─── */}
       <header className="shrink-0 border-b border-white/[0.06] bg-[var(--color-bg)]/90 backdrop-blur-xl z-30" style={{ paddingTop: "env(safe-area-inset-top, 0)" }}>
+        {/* Fire hairline */}
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-crimson/40 to-transparent" />
+
         {/* Nav offset spacer */}
         <div className="h-16" />
 
@@ -394,10 +563,17 @@ export default function TicketDetailPage() {
                     {typeInfo.name}
                   </span>
                 )}
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusInfo?.bg} ${statusInfo?.color} ${statusInfo?.border}`}>
-                  <span className={`w-1 h-1 rounded-full ${ticket.status === "open" ? "bg-emerald-400" : ticket.status === "in-progress" ? "bg-amber-400" : "bg-white/30"}`} />
-                  {statusInfo?.label}
-                </span>
+                {isArchived ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-gold/30 bg-gold/10 text-gold">
+                    <span className="w-1 h-1 rounded-full bg-gold" />
+                    Archived
+                  </span>
+                ) : (
+                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${statusInfo?.bg} ${statusInfo?.color} ${statusInfo?.border}`}>
+                    <span className={`w-1 h-1 rounded-full ${ticket.status === "open" ? "bg-emerald-400" : ticket.status === "in-progress" ? "bg-amber-400" : "bg-white/30"}`} />
+                    {statusInfo?.label}
+                  </span>
+                )}
               </div>
               <h1 className="text-sm font-semibold text-text truncate">{ticket.subject}</h1>
             </div>
@@ -426,8 +602,37 @@ export default function TicketDetailPage() {
         {/* Staff controls row */}
         {isStaff && (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 pb-2">
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Status dropdown */}
+            {isArchived ? (
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[11px] font-semibold uppercase tracking-wider border border-gold/30 bg-gold/10 text-gold">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                  </svg>
+                  Read-only archive
+                </span>
+                <button
+                  onClick={handleRestore}
+                  disabled={restoring}
+                  className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all border border-emerald-500/30 bg-emerald-500/[0.06] text-emerald-400 hover:bg-emerald-500/[0.12] disabled:opacity-40"
+                >
+                  {restoring ? "Restoring…" : "Restore"}
+                </button>
+                <button
+                  onClick={downloadTranscript}
+                  className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all border border-white/[0.08] text-text-muted hover:border-white/[0.15] hover:text-text"
+                >
+                  Download transcript
+                </button>
+                <button
+                  onClick={() => { setPurgeError(""); setShowPurgeConfirm(true); }}
+                  className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all border border-red-500/30 bg-red-500/[0.06] text-red-400 hover:bg-red-500/[0.12] hover:border-red-500/50"
+                >
+                  Purge
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Status dropdown */}
               <select
                 value={ticket.status}
                 onChange={(e) => handleStatus(e.target.value)}
@@ -464,6 +669,20 @@ export default function TicketDetailPage() {
                 ))}
               </select>
 
+              {/* Type dropdown */}
+              <select
+                value={ticket.type}
+                onChange={(e) => handleTypeChange(e.target.value)}
+                disabled={updating}
+                className="px-2.5 py-1.5 rounded-md text-[11px] font-medium border border-white/[0.08] bg-transparent text-text-muted transition-all focus:outline-none focus:border-crimson/40 disabled:opacity-40"
+              >
+                {TICKET_TYPES.map((t) => (
+                  <option key={t.slug} value={t.slug} className="bg-[#0c0c10] text-text">
+                    {t.name}
+                  </option>
+                ))}
+              </select>
+
               {/* Assign */}
               <button
                 onClick={handleAssign}
@@ -485,7 +704,25 @@ export default function TicketDetailPage() {
               >
                 {reminding ? "Sending…" : "Remind"}
               </button>
-            </div>
+
+              {canDeleteTicket && (
+                <>
+                  <span className="w-px h-4 bg-white/[0.08]" />
+                  <button
+                    onClick={() => { setDeleteError(""); setShowDeleteConfirm(true); }}
+                    className="px-2.5 py-1.5 rounded-md text-[11px] font-semibold transition-all border border-red-500/30 bg-red-500/[0.06] text-red-400 hover:bg-red-500/[0.12] hover:border-red-500/50"
+                  >
+                    Archive
+                  </button>
+                </>
+              )}
+              </div>
+            )}
+            {archivedNote && (
+              <p className={`text-[11px] mt-1 ${archivedNote.ok ? "text-emerald-400" : "text-red-400"}`}>
+                {archivedNote.text}
+              </p>
+            )}
             {remindMsg && (
               <p className={`text-[11px] mt-1 ${remindMsg.ok ? "text-emerald-400" : "text-red-400"}`}>
                 {remindMsg.text}
@@ -653,7 +890,16 @@ export default function TicketDetailPage() {
 
       {/* ─── Input bar (fixed bottom) ─── */}
       <div className="shrink-0 border-t border-white/[0.06] bg-[var(--color-bg)]/95 backdrop-blur-xl z-30" style={{ paddingBottom: "env(safe-area-inset-bottom, 0)" }}>
-        {ticket.status === "closed" ? (
+        {isArchived ? (
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
+            <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-gold/20 bg-gold/[0.03]">
+              <svg className="w-4 h-4 text-gold/50" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+              </svg>
+              <span className="text-xs text-gold/60">This ticket is archived and read-only. Restore it to continue the conversation.</span>
+            </div>
+          </div>
+        ) : ticket.status === "closed" ? (
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3">
             <div className="flex items-center justify-center gap-2 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.015]">
               <svg className="w-4 h-4 text-text-muted/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -750,6 +996,46 @@ export default function TicketDetailPage() {
           </form>
         )}
       </div>
+
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Archive this ticket?"
+        message={ticket ? `"${ticket.subject}" will be moved to the archive with its full transcript preserved. Only authorized staff can view or restore it later.` : ""}
+        confirmLabel="Archive Ticket"
+        danger
+        busy={deleting}
+        error={deleteError}
+        showReason={isStaff}
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={showPurgeConfirm}
+        title="Permanently purge this ticket?"
+        message={ticket ? `"${ticket.subject}" and its entire transcript and attachments will be permanently deleted. This cannot be undone.` : ""}
+        confirmLabel="Purge Forever"
+        danger
+        busy={purging}
+        error={purgeError}
+        showReason
+        onConfirm={confirmPurge}
+        onCancel={() => setShowPurgeConfirm(false)}
+      />
+
+      <ConfirmDialog
+        open={!!pendingTypeChange}
+        title="Change ticket type?"
+        message={
+          pendingTypeChange && ticket
+            ? `Change "${ticket.subject}" from "${TICKET_TYPES.find((t) => t.slug === ticket.type)?.name || ticket.type}" to "${TICKET_TYPES.find((t) => t.slug === pendingTypeChange)?.name || pendingTypeChange}"?\n\nYou may lose access to this ticket if the new type is restricted to roles you don't have.`
+            : ""
+        }
+        confirmLabel="Change Type"
+        busy={updating}
+        onConfirm={confirmTypeChange}
+        onCancel={() => setPendingTypeChange(null)}
+      />
     </div>
   );
 }

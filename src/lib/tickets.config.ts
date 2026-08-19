@@ -29,6 +29,33 @@ export const HIGH_RANK_ROLE_IDS = [
 /** Bug reports can only be opened by the Developer role. */
 export const DEV_ROLE_ID = "1507135880824094751";
 
+/**
+ * Who is allowed to DELETE tickets.
+ * - "staff-only": only staff members can delete tickets.
+ * - "staff-or-owner": staff can delete any ticket; the ticket creator can delete their own.
+ */
+export const TICKET_DELETE_POLICY: "staff-only" | "staff-or-owner" = "staff-only";
+
+/**
+ * Who can access the ticket archive (soft-deleted tickets and their transcripts).
+ * Edit this list to decide who gets access. Defaults to management-level roles.
+ */
+export const TICKET_ARCHIVE_ROLE_IDS = [
+  "985444871722631199", // Creator
+  "1471841519970287789", // Founder
+  "1504840040424018123", // Co-Founder
+  "1504840052654735390", // Server Supervisor
+  "1504840056333144246", // Server Manager
+  "1504840058174443582", // Discord Manager
+  "1504850103154901014", // Admin Supervisor
+  "1507135880824094751", // Developer
+];
+
+/** True if the user may view the ticket archive. */
+export function canAccessTicketArchive(userRoles: string[]): boolean {
+  return userRoles.some((r) => TICKET_ARCHIVE_ROLE_IDS.includes(r));
+}
+
 export const TICKET_TYPES: TicketType[] = [
   {
     slug: "general",
@@ -132,4 +159,15 @@ export function getTicketTypeStyle(t: TicketType): { color: string; bg: string; 
     bg: `rgba(${r}, ${g}, ${b}, 0.12)`,
     border: `rgba(${r}, ${g}, ${b}, 0.35)`,
   };
+}
+
+interface DeleteCandidate {
+  userId: string;
+}
+
+/** Returns true if the given user is allowed to delete this ticket under the configured policy. */
+export function canDeleteTicket(isStaff: boolean, userId: string, ticket: DeleteCandidate): boolean {
+  if (isStaff) return true;
+  if (TICKET_DELETE_POLICY === "staff-or-owner") return ticket.userId === userId;
+  return false;
 }

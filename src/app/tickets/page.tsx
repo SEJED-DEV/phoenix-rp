@@ -6,12 +6,14 @@ import { getDiscordLoginUrl } from "@/lib/auth-client";
 import { TICKET_TYPES, type TicketType } from "@/lib/tickets.config";
 import TicketForm from "@/components/TicketForm";
 import TicketList, { type Ticket } from "@/components/TicketList";
-import { Skeleton, SkeletonCard } from "@/components/Skeleton";
+import { Skeleton } from "@/components/Skeleton";
 
 export default function TicketsPage() {
   const { status, loading } = useAuth();
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [isStaff, setIsStaff] = useState(false);
+  const [canViewArchive, setCanViewArchive] = useState(false);
+  const [deletePolicy, setDeletePolicy] = useState<"staff-only" | "staff-or-owner">("staff-only");
   const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [discordUrl, setDiscordUrl] = useState("#");
@@ -30,6 +32,8 @@ export default function TicketsPage() {
         const data = await res.json();
         setTickets(data.tickets || []);
         setIsStaff(data.isStaff || false);
+        if (data.canViewArchive) setCanViewArchive(data.canViewArchive);
+        if (data.deletePolicy) setDeletePolicy(data.deletePolicy);
         if (data.availableTypes) setAvailableTypes(data.availableTypes);
       }
     } catch {
@@ -59,38 +63,25 @@ export default function TicketsPage() {
     fetchTickets();
   };
 
+  const userId = "user" in status ? status.user?.id : null;
+
   if (loading || fetching) {
     return (
-      <section className="relative min-h-screen px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
-            <div>
-              <Skeleton className="h-3 w-36 mb-4" />
-              <Skeleton className="h-14 sm:h-16 w-56 mb-3" />
-              <Skeleton className="h-4 w-44" />
-            </div>
-            <Skeleton className="h-12 w-40 rounded-full" />
+      <section className="relative min-h-screen px-6 pb-20" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
+        <div className="max-w-5xl mx-auto">
+          <div className="mb-12">
+            <Skeleton className="h-3 w-36 mb-5" />
+            <Skeleton className="h-14 w-48 mb-3" />
+            <Skeleton className="h-4 w-64" />
           </div>
-          <div className="tk-stats mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
             {[...Array(4)].map((_, i) => (
-              <SkeletonCard key={i} className="h-16 rounded-xl" />
+              <Skeleton key={i} className="h-16 rounded-xl" />
             ))}
           </div>
-          <div className="tk-masonry">
+          <div className="space-y-1">
             {[...Array(6)].map((_, i) => (
-              <SkeletonCard key={i} className="h-44 rounded-2xl p-5">
-                <div className="flex items-center gap-2 mb-3">
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                  <Skeleton className="h-3 w-28" />
-                </div>
-                <Skeleton className="h-4 w-3/4 mb-3" />
-                <Skeleton className="h-3 w-full mb-2" />
-                <Skeleton className="h-3 w-2/3 mb-4" />
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-3 w-24" />
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </div>
-              </SkeletonCard>
+              <Skeleton key={i} className="h-14 rounded-xl" />
             ))}
           </div>
         </div>
@@ -123,104 +114,63 @@ export default function TicketsPage() {
     <section className="relative min-h-screen">
       <div className="absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-[var(--color-bg)]" />
-        <div className="absolute top-[-20%] left-[10%] w-[700px] h-[600px] bg-crimson/[0.04] rounded-full blur-[160px]" />
-        <div className="absolute bottom-[-20%] right-[10%] w-[600px] h-[500px] bg-gold/[0.03] rounded-full blur-[140px]" />
+        <div className="absolute top-[-30%] left-1/2 -translate-x-1/2 w-[1000px] h-[700px] rounded-full blur-[250px] opacity-[0.03]" style={{ background: "#a78bfa" }} />
       </div>
 
-      <div className="relative z-10 max-w-6xl mx-auto px-6 sm:px-8 pb-24 sm:pb-32" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 mb-10">
-          <div>
-            <div className="flex items-center gap-3 mb-4">
-              <span className="h-px w-10 bg-gradient-to-r from-crimson to-transparent" />
-              <span className="font-display text-[11px] tracking-[0.35em] text-crimson uppercase">Phoenix Support</span>
-            </div>
-            <h1 className="font-display text-5xl sm:text-7xl fire-text mb-3">
-              {isStaff ? "All Tickets" : "My Tickets"}
-            </h1>
-            <p className="text-text-muted text-sm max-w-md">
-              {isStaff
-                ? "Manage and respond to community tickets in real time."
-                : "Submit and track your support tickets."}
-            </p>
+      <div className="relative z-10 max-w-5xl mx-auto px-6 pb-20" style={{ paddingTop: "clamp(80px, 12vh, 140px)" }}>
+        {/* Header */}
+        <div className="mb-12">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="h-px flex-1 max-w-[60px]" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.12))" }} />
+            <span className="text-[9px] tracking-[0.5em] uppercase text-white/20 font-display">Support</span>
+            <div className="h-px flex-1 max-w-[60px]" style={{ background: "linear-gradient(90deg, rgba(255,255,255,0.12), transparent)" }} />
           </div>
-          <button
-            onClick={() => setShowForm(true)}
-            className="hero-btn-primary shrink-0"
-          >
-            <span className="hero-btn-inner">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              New Ticket
-            </span>
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="font-display text-5xl sm:text-7xl tracking-tight text-white mb-3">
+                {isStaff ? "Tickets" : "My Tickets"}
+              </h1>
+              <p className="text-white/25 text-sm max-w-md">
+                {isStaff ? "Manage and respond to community support requests." : "Submit and track your support tickets."}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              {canViewArchive && (
+                <a href="/tickets/archive" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-medium text-white/30 border border-white/[0.06] hover:text-white/60 hover:border-white/[0.12] transition-all">
+                  Archive
+                </a>
+              )}
+              <button onClick={() => setShowForm(true)} className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-[11px] font-medium text-white bg-white/[0.06] hover:bg-white/[0.1] border border-white/[0.08] transition-all">
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.5v15m7.5-7.5h-15" /></svg>
+                New Ticket
+              </button>
+            </div>
+          </div>
         </div>
 
+        {/* Stats */}
         {(isStaff || tickets.length > 0) && (
-          <div className="tk-stats">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
             {[
-              {
-                key: "total",
-                label: "Total",
-                value: stats.total,
-                color: "var(--color-crimson)",
-                icon: "M3 6h18M3 12h18M3 18h12",
-              },
-              {
-                key: "open",
-                label: "Open",
-                value: stats.open,
-                color: "#34d399",
-                icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
-              },
-              {
-                key: "in-progress",
-                label: "In Progress",
-                value: stats.inProgress,
-                color: "#fbbf24",
-                icon: "M12 21a9 9 0 100-18 9 9 0 000 18zM12 7v5l3 2",
-              },
-              {
-                key: "closed",
-                label: "Closed",
-                value: stats.closed,
-                color: "var(--color-text-muted)",
-                icon: "M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z",
-              },
-            ].map((stat, i) => {
-              const pct = stats.total > 0 ? Math.round((stat.value / stats.total) * 100) : 0;
-              return (
-                <div
-                  key={stat.key}
-                  className="tk-stat"
-                  style={{ animationDelay: `${i * 80}ms` }}
-                >
-                  <div
-                    className="tk-stat-icon"
-                    style={{ color: stat.color, background: `${stat.color}14`, borderColor: `${stat.color}3D` }}
-                  >
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={stat.icon} />
-                    </svg>
-                  </div>
-                  <div>
-                    <div key={stat.value} className={`tk-stat-num stat-bump`} style={{ color: stat.color }}>
-                      {stat.value}
-                    </div>
-                    <div className="tk-stat-label">{stat.label}</div>
-                  </div>
-                  <div className="tk-stat-bar">
-                    <span style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              );
-            })}
+              { label: "Total", value: stats.total, color: "#a78bfa" },
+              { label: "Open", value: stats.open, color: "#34d399" },
+              { label: "In Progress", value: stats.inProgress, color: "#fbbf24" },
+              { label: "Closed", value: stats.closed, color: "rgba(255,255,255,0.25)" },
+            ].map((s) => (
+              <div key={s.label} className="px-4 py-3 rounded-xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                <p className="font-display text-2xl text-white">{s.value}</p>
+                <p className="text-[10px] text-white/20 uppercase tracking-[0.15em] mt-0.5">{s.label}</p>
+              </div>
+            ))}
           </div>
         )}
 
         <TicketList
           tickets={tickets}
           isStaff={isStaff}
+          userId={userId}
+          deletePolicy={deletePolicy}
+          onDeleted={() => fetchTickets()}
         />
       </div>
 
@@ -232,8 +182,6 @@ export default function TicketsPage() {
           onCancel={() => setShowForm(false)}
         />
       )}
-
-      <div className="absolute bottom-0 left-0 right-0 fire-line z-20" />
     </section>
   );
 }

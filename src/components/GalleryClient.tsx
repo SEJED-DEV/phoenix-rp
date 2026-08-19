@@ -7,6 +7,8 @@ interface MediaFile {
   name: string;
   isVideo: boolean;
   src: string;
+  description?: string;
+  credits?: string;
 }
 
 type FilterMode = "all" | "photos" | "videos";
@@ -83,6 +85,20 @@ function Lightbox({
             <Image key={item.src} src={item.src} alt="" width={1600} height={1000} quality={95} className="gal-lb-media" priority />
           )}
         </div>
+
+        {item.description && (
+          <div className="w-full text-center px-8 pb-2" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white/70 text-sm" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}>{item.description}</p>
+            {item.credits && (
+              <p className="text-white/40 text-[11px] mt-1" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}>{item.credits}</p>
+            )}
+          </div>
+        )}
+        {!item.description && item.credits && (
+          <div className="w-full text-center px-8 pb-2" onClick={(e) => e.stopPropagation()}>
+            <p className="text-white/40 text-[11px]" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}>{item.credits}</p>
+          </div>
+        )}
 
         {items.length > 1 && (
           <button className="gal-lb-nav next" onClick={next} aria-label="Next">
@@ -190,8 +206,14 @@ export default function GalleryClient() {
         return r.json() as Promise<MediaFile[]>;
       })
       .then((media) => {
-        setItems(media);
-        const images = media.filter((m) => !m.isVideo);
+        // Fisher-Yates shuffle for random display order
+        const shuffled = [...media];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        setItems(shuffled);
+        const images = shuffled.filter((m) => !m.isVideo);
         if (images.length > 0) setFeaturedIdx(Math.floor(Math.random() * images.length));
         setReady(true);
       })
@@ -302,6 +324,12 @@ export default function GalleryClient() {
                 <span className="block fire-text">CAPTURED</span>
                 <span className="block text-white/90">MOMENTS</span>
               </span>
+              {featured.description && (
+                <p className="text-white/60 text-xs mt-2 max-w-md" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}>{featured.description}</p>
+              )}
+              {featured.credits && (
+                <p className="text-white/35 text-[10px] mt-1" style={{ textShadow: "0 1px 8px rgba(0,0,0,0.6)" }}>{featured.credits}</p>
+              )}
               <span className="gal-featured-meta">
                 {counts.all} {counts.all === 1 ? "item" : "items"} in collection
               </span>
@@ -319,12 +347,20 @@ export default function GalleryClient() {
             return (
               <div
                 key={item.name}
-                className={`gal-cell ${cellClass(i)}`}
+                className={`gal-cell ${cellClass(i)} group`}
                 onClick={() => openLb(item.name)}
                 style={{ transitionDelay: `${(m % 5) * 60}ms` }}
               >
                 {item.isVideo ? (
-                  <video src={item.src} muted loop playsInline preload="metadata" />
+                  <video
+                    src={item.src}
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    onMouseEnter={(e) => { e.currentTarget.play().catch(() => {}); }}
+                    onMouseLeave={(e) => { e.currentTarget.pause(); e.currentTarget.currentTime = 0; }}
+                  />
                 ) : (
                   <Image
                     src={item.src}
@@ -353,6 +389,18 @@ export default function GalleryClient() {
                   </span>
                   <span className="gal-cell-type">{item.isVideo ? "Video" : "Photo"}</span>
                 </div>
+
+                {item.description && (
+                  <div className="absolute bottom-0 left-0 right-0 px-3 pb-8 pt-6 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none z-[2]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)", transitionDuration: "0.35s" }}>
+                    <p className="text-white/80 text-[11px] leading-tight line-clamp-2">{item.description}</p>
+                    {item.credits && <p className="text-white/40 text-[9px] mt-0.5">{item.credits}</p>}
+                  </div>
+                )}
+                {!item.description && item.credits && (
+                  <div className="absolute bottom-0 left-0 right-0 px-3 pb-8 pt-6 opacity-100 group-hover:opacity-0 transition-opacity pointer-events-none z-[2]" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%)", transitionDuration: "0.35s" }}>
+                    <p className="text-white/40 text-[9px]">{item.credits}</p>
+                  </div>
+                )}
               </div>
             );
           })}

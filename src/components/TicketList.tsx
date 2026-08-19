@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { TICKET_TYPES, getTicketTypeStyle } from "@/lib/tickets.config";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export interface Ticket {
   id: string;
@@ -17,6 +18,7 @@ export interface Ticket {
   assignedTo: string | null;
   assignedToUsername: string | null;
   userRole: string | null;
+  archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -24,77 +26,43 @@ export interface Ticket {
 interface TicketListProps {
   tickets: Ticket[];
   isStaff: boolean;
+  userId?: string | null;
+  deletePolicy?: "staff-only" | "staff-or-owner";
+  onDeleted?: (ticketId: string) => void;
 }
 
-const PAGE_SIZE = 12;
+const PAGE_SIZE = 20;
 
-const SEGMENTS: { key: string; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "open", label: "Open" },
-  { key: "in-progress", label: "In Progress" },
-  { key: "closed", label: "Closed" },
-];
-
-const STATUS_META: Record<string, { label: string; dot: string; badge: string }> = {
-  open: {
-    label: "Open",
-    dot: "bg-emerald-400",
-    badge: "bg-emerald-500/[0.08] text-emerald-400 border-emerald-500/25",
-  },
-  "in-progress": {
-    label: "In Progress",
-    dot: "bg-amber-400",
-    badge: "bg-amber-500/[0.08] text-amber-400 border-amber-500/25",
-  },
-  closed: {
-    label: "Closed",
-    dot: "bg-white/25",
-    badge: "bg-white/[0.04] text-text-muted border-white/[0.08]",
-  },
+const STATUS_META: Record<string, { label: string; dot: string; color: string }> = {
+  open: { label: "Open", dot: "bg-emerald-400", color: "text-emerald-400" },
+  "in-progress": { label: "In Progress", dot: "bg-amber-400", color: "text-amber-400" },
+  closed: { label: "Closed", dot: "bg-white/25", color: "text-white/25" },
 };
 
-const PRIORITY_META: Record<string, { label: string; dot: string; pill: string; glow: string }> = {
-  urgent: {
-    label: "Urgent",
-    dot: "bg-red-400",
-    pill: "text-red-400 border-red-500/30 bg-red-500/[0.08]",
-    glow: "tk-pri-urgent",
-  },
-  high: {
-    label: "High",
-    dot: "bg-orange-400",
-    pill: "text-orange-400 border-orange-500/30 bg-orange-500/[0.08]",
-    glow: "tk-pri-high",
-  },
-  medium: {
-    label: "Medium",
-    dot: "bg-blue-400",
-    pill: "text-blue-400 border-blue-500/30 bg-blue-500/[0.08]",
-    glow: "tk-pri-medium",
-  },
-  low: {
-    label: "Low",
-    dot: "bg-slate-400",
-    pill: "text-slate-400 border-slate-500/30 bg-slate-500/[0.08]",
-    glow: "tk-pri-low",
-  },
+const PRIORITY_META: Record<string, { label: string; color: string }> = {
+  urgent: { label: "Urgent", color: "text-red-400" },
+  high: { label: "High", color: "text-orange-400" },
+  medium: { label: "Med", color: "text-blue-400" },
+  low: { label: "Low", color: "text-white/25" },
 };
 
-const ROLE_BADGE: Record<string, string> = {
-  Staff: "bg-crimson/15 text-crimson border-crimson/30",
-  Whitelisted: "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
-  "🔑 | Whitelisted S2": "bg-emerald-500/10 text-emerald-400 border-emerald-500/25",
-  "Check-in": "bg-amber-500/10 text-amber-400 border-amber-500/25",
-};
-
-export default function TicketList({ tickets, isStaff }: TicketListProps) {
+export default function TicketList({
+  tickets,
+  isStaff,
+  userId,
+  deletePolicy = "staff-only",
+  onDeleted,
+}: TicketListProps) {
   const router = useRouter();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterType, setFilterType] = useState<string>("all");
-  const [filterPriority, setFilterPriority] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [sortNewest, setSortNewest] = useState(true);
+
+  const [pendingDelete, setPendingDelete] = useState<Ticket | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   const knownIds = useRef<Set<string>>(new Set());
   const currentIds = useMemo(() => new Set(tickets.map((t) => t.id)), [tickets]);
@@ -103,7 +71,6 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
     let result = tickets.filter((t) => {
       if (filterStatus !== "all" && t.status !== filterStatus) return false;
       if (filterType !== "all" && t.type !== filterType) return false;
-      if (filterPriority !== "all" && t.priority !== filterPriority) return false;
       if (search) {
         const q = search.toLowerCase();
         const match =
@@ -121,15 +88,15 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
       return sortNewest ? db - da : da - db;
     });
     return result;
-  }, [tickets, filterStatus, filterType, filterPriority, search, sortNewest]);
+  }, [tickets, filterStatus, filterType, search, sortNewest]);
 
   const segmentCounts = useMemo(
     () => ({
-      open: filtered.filter((t) => t.status === "open").length,
-      inProgress: filtered.filter((t) => t.status === "in-progress").length,
-      closed: filtered.filter((t) => t.status === "closed").length,
+      open: tickets.filter((t) => t.status === "open").length,
+      inProgress: tickets.filter((t) => t.status === "in-progress").length,
+      closed: tickets.filter((t) => t.status === "closed").length,
     }),
-    [filtered],
+    [tickets],
   );
 
   useEffect(() => {
@@ -142,99 +109,97 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
 
   const resetPage = () => setPage(1);
 
-  const hasFilters =
-    search !== "" || filterStatus !== "all" || filterType !== "all" || filterPriority !== "all";
+  const hasFilters = search !== "" || filterStatus !== "all" || filterType !== "all";
 
-  const clearFilters = () => {
-    setSearch("");
-    setFilterStatus("all");
-    setFilterType("all");
-    setFilterPriority("all");
-    setPage(1);
+  const canDelete = (t: Ticket) =>
+    isStaff || (deletePolicy === "staff-or-owner" && !!userId && t.userId === userId);
+
+  const handleDelete = async (reason?: string) => {
+    if (!pendingDelete || deleting) return;
+    setDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/tickets/${pendingDelete.id}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      });
+      if (res.ok) {
+        const id = pendingDelete.id;
+        setPendingDelete(null);
+        onDeleted?.(id);
+      } else {
+        const data = await res.json().catch(() => null);
+        setDeleteError(data?.error || "Failed to delete ticket.");
+      }
+    } catch {
+      setDeleteError("Failed to delete ticket.");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
     <div>
-      {/* Search */}
-      <div className="relative max-w-xl mb-4">
-        <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => { setSearch(e.target.value); resetPage(); }}
-          placeholder="Search tickets by subject, user, or ID..."
-          className="w-full pl-10 pr-10 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-text text-sm placeholder:text-text-muted/40 focus:outline-none focus:border-crimson/40 focus:bg-white/[0.03] transition-colors"
-        />
-        {search && (
-          <button
-            onClick={() => { setSearch(""); resetPage(); }}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-text-muted hover:text-text transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        )}
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3 mb-6">
-        <div className="tk-seg">
-          {SEGMENTS.map((s) => (
-            <button
-              key={s.key}
-              onClick={() => { setFilterStatus(s.key); resetPage(); }}
-              className={`tk-seg-item ${filterStatus === s.key ? "active" : ""}`}
-            >
-              {s.label}
-              {s.key === "open" && <span className="tk-seg-count">{segmentCounts.open}</span>}
-              {s.key === "in-progress" && <span className="tk-seg-count">{segmentCounts.inProgress}</span>}
-              {s.key === "closed" && <span className="tk-seg-count">{segmentCounts.closed}</span>}
+      {/* Search + filters */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => { setSearch(e.target.value); resetPage(); }}
+            placeholder="Search tickets..."
+            className="w-full pl-10 pr-8 py-2.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-white text-sm placeholder:text-white/20 focus:outline-none focus:border-crimson/40 transition-colors"
+          />
+          {search && (
+            <button onClick={() => { setSearch(""); resetPage(); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/50 transition-colors">
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
-          ))}
+          )}
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          {(["all", "open", "in-progress", "closed"] as const).map((s) => {
+            const count = s === "all" ? tickets.length : segmentCounts[s === "in-progress" ? "inProgress" : s];
+            const isActive = filterStatus === s;
+            const sc = s !== "all" ? STATUS_META[s] : null;
+            return (
+              <button
+                key={s}
+                onClick={() => { setFilterStatus(s); resetPage(); }}
+                className="px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap"
+                style={{
+                  background: isActive ? (s === "all" ? "rgba(255,255,255,0.08)" : `${STATUS_META[s === "in-progress" ? "in-progress" : s]?.color === "text-emerald-400" ? "#34d399" : STATUS_META[s === "in-progress" ? "in-progress" : s]?.color === "text-amber-400" ? "#fbbf24" : "#666"}10`) : "transparent",
+                  border: `1px solid ${isActive ? "rgba(255,255,255,0.1)" : "transparent"}`,
+                  color: isActive ? "#fff" : "rgba(255,255,255,0.3)",
+                }}
+              >
+                {s === "all" ? "All" : STATUS_META[s]?.label}
+                <span className="ml-1.5 text-[9px] opacity-50">{count}</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="flex items-center gap-2">
           <select
             value={filterType}
             onChange={(e) => { setFilterType(e.target.value); resetPage(); }}
-            className="px-3 py-2 rounded-lg border border-white/[0.06] bg-white/[0.02] text-text text-xs focus:outline-none focus:border-crimson/40"
+            className="px-2.5 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-white/40 text-[11px] focus:outline-none focus:border-crimson/40"
           >
             <option value="all">All Types</option>
             {TICKET_TYPES.map((t) => (
               <option key={t.slug} value={t.slug}>{t.name}</option>
             ))}
           </select>
-          {isStaff && (
-            <select
-              value={filterPriority}
-              onChange={(e) => { setFilterPriority(e.target.value); resetPage(); }}
-              className="px-3 py-2 rounded-lg border border-white/[0.06] bg-white/[0.02] text-text text-xs focus:outline-none focus:border-crimson/40"
-            >
-              <option value="all">All Priority</option>
-              <option value="urgent">Urgent</option>
-              <option value="high">High</option>
-              <option value="medium">Medium</option>
-              <option value="low">Low</option>
-            </select>
-          )}
-          {isStaff && (
-            <span className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.04] text-[10px] font-semibold uppercase tracking-wider text-emerald-400/90">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 tk-dot-pulse" />
-              Live
-            </span>
-          )}
-        </div>
-
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-[11px] text-text-muted">{filtered.length} ticket{filtered.length !== 1 ? "s" : ""}</span>
           <button
             onClick={() => setSortNewest(!sortNewest)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-white/[0.06] bg-white/[0.02] text-text-muted text-xs hover:text-text hover:border-white/[0.12] transition-colors"
+            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-white/[0.06] bg-white/[0.02] text-white/30 text-[11px] hover:text-white/60 hover:border-white/[0.12] transition-colors"
           >
-            <svg className={`w-3.5 h-3.5 transition-transform ${sortNewest ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-3 h-3 transition-transform ${sortNewest ? "" : "rotate-180"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
             </svg>
             {sortNewest ? "Newest" : "Oldest"}
@@ -243,36 +208,21 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
       </div>
 
       {hasFilters && (
-        <button
-          onClick={clearFilters}
-          className="inline-flex items-center gap-1.5 mb-6 text-[11px] text-text-muted hover:text-crimson transition-colors"
-        >
-          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
+        <button onClick={() => { setSearch(""); setFilterStatus("all"); setFilterType("all"); setPage(1); }} className="inline-flex items-center gap-1 mb-4 text-[10px] text-white/20 hover:text-crimson transition-colors">
+          <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
           Clear filters
         </button>
       )}
 
-      {/* Ticket grid */}
+      {/* Ticket list */}
       {paginated.length === 0 ? (
-        <div className="tk-empty">
-          <div className="tk-empty-icon">
-            <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-          </div>
-          <h3>{search || hasFilters ? "No matching tickets" : isStaff ? "No tickets yet" : "You have no tickets"}</h3>
-          <p>
-            {search || hasFilters
-              ? "Try adjusting your search or filters to find what you're looking for."
-              : isStaff
-                ? "When community members open tickets, they'll appear here in real time."
-                : "Open a ticket and it will show up here so you can track its progress."}
+        <div className="text-center py-24 rounded-xl" style={{ background: "rgba(255,255,255,0.015)", border: "1px dashed rgba(255,255,255,0.05)" }}>
+          <p className="text-white/15 text-xs tracking-[0.3em] uppercase font-display">
+            {search || hasFilters ? "No matching tickets" : isStaff ? "No tickets yet" : "You have no tickets"}
           </p>
         </div>
       ) : (
-        <div className="tk-masonry">
+        <div className="space-y-1">
           {paginated.map((ticket, i) => {
             const typeInfo = TICKET_TYPES.find((t) => t.slug === ticket.type);
             const typeStyle = typeInfo ? getTicketTypeStyle(typeInfo) : null;
@@ -282,7 +232,6 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
             const date = new Date(ticket.createdAt);
             const dateStr = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
             const timeStr = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-            const initial = (ticket.username || "?").charAt(0).toUpperCase();
 
             return (
               <div
@@ -291,87 +240,58 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
                 tabIndex={0}
                 onClick={() => router.push(`/tickets/${ticket.id}`)}
                 onKeyDown={(e) => { if (e.key === "Enter") router.push(`/tickets/${ticket.id}`); }}
-                className={`tk-card group ${pri.glow} ${isNew ? "tk-new" : ""}`}
-                style={{ animationDelay: `${Math.min(i, 12) * 40}ms` }}
+                className={`group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/[0.03] cursor-pointer ${isNew ? "animate-[fadeIn_0.3s_ease]" : ""}`}
               >
-                <span className="tk-card-accent" style={typeStyle ? { background: typeStyle.color } : undefined} />
-
-                {/* Header: type + priority */}
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    {typeInfo && typeStyle && (
-                      <span className="tk-type-icon" style={{ color: typeStyle.color, background: typeStyle.bg, borderColor: typeStyle.border }}>
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeInfo.icon} />
-                        </svg>
-                      </span>
-                    )}
-                    <span className="tk-type-name truncate" style={typeStyle ? { color: typeStyle.color } : undefined}>
-                      {typeInfo ? typeInfo.name : ticket.type}
-                    </span>
-                  </div>
-                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold border whitespace-nowrap ${pri.pill}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${pri.dot} ${ticket.priority === "urgent" ? "tk-dot-pulse-red" : ""}`} />
-                    {pri.label}
-                  </span>
-                </div>
-
-                {/* Subject + assignment */}
-                <div>
-                  <h3 className="tk-subject group-hover:text-crimson">{ticket.subject}</h3>
-                  {isStaff && ticket.assignedToUsername && (
-                    <span className="mt-1.5 inline-flex items-center gap-1.5 text-[10px] text-text-muted/60">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                {/* Type dot */}
+                <div className="shrink-0">
+                  <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: typeStyle ? typeStyle.bg : "rgba(255,255,255,0.04)", border: `1px solid ${typeStyle ? typeStyle.border : "rgba(255,255,255,0.06)"}` }}>
+                    {typeInfo && (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" style={{ color: typeStyle?.color }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={typeInfo.icon} />
                       </svg>
-                      Assigned to @{ticket.assignedToUsername}
-                    </span>
-                  )}
-                </div>
-
-                {/* Description excerpt */}
-                <p className="tk-desc line-clamp-2">{ticket.description}</p>
-
-                {/* Meta: user + status */}
-                <div className="tk-meta">
-                  <div className="flex items-center gap-2 min-w-0">
-                    {ticket.avatar ? (
-                      <img src={ticket.avatar} alt="" className="w-5 h-5 rounded-full shrink-0" loading="lazy" />
-                    ) : (
-                      <span className="w-5 h-5 rounded-full bg-white/10 text-text-dim text-[9px] font-bold flex items-center justify-center shrink-0">
-                        {initial}
-                      </span>
-                    )}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); router.push(`/profile/${ticket.userId}`); }}
-                      className="tk-user truncate"
-                    >
-                      @{ticket.username}
-                    </button>
-                    {ticket.userRole && ROLE_BADGE[ticket.userRole] && (
-                      <span className={`hidden sm:inline-flex text-[8px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded border shrink-0 ${ROLE_BADGE[ticket.userRole]}`}>
-                        {ticket.userRole}
-                      </span>
                     )}
                   </div>
-                  <span className={`tk-badge shrink-0 ${status.badge}`}>
-                    <span className={`w-1.5 h-1.5 rounded-full ${status.dot} ${ticket.status === "open" ? "tk-dot-pulse" : ""}`} />
-                    {status.label}
-                  </span>
                 </div>
 
-                {/* Footer: id + date / arrow */}
-                <div className="tk-footer">
-                  <span className="tk-id">
-                    <span className="tk-id-hash">#</span>
-                    {ticket.id.slice(0, 8)}
-                    <span className="tk-date"> · {dateStr} {timeStr}</span>
-                  </span>
-                  <span className="tk-arrow">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5-5 5M6 12h12" />
-                    </svg>
-                  </span>
+                {/* Main info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2.5 mb-0.5">
+                    <span className="text-sm text-white/90 font-medium truncate group-hover:text-white transition-colors">{ticket.subject}</span>
+                    <span className={`text-[9px] font-semibold ${status.color}`}>{status.label}</span>
+                    {ticket.priority !== "medium" && (
+                      <span className={`text-[9px] font-medium ${pri.color}`}>{pri.label}</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px] text-white/20">
+                    <span style={{ color: typeStyle?.color }} className="opacity-60">{typeInfo?.name || ticket.type}</span>
+                    <span className="text-white/8">·</span>
+                    <span>@{ticket.username}</span>
+                    {isStaff && ticket.assignedToUsername && (
+                      <>
+                        <span className="text-white/8">·</span>
+                        <span className="text-white/25">→ @{ticket.assignedToUsername}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side */}
+                <div className="hidden sm:flex items-center gap-3 shrink-0">
+                  <span className="text-[10px] text-white/15">{dateStr} {timeStr}</span>
+                  {canDelete(ticket) && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setPendingDelete(ticket); setDeleteError(""); }}
+                      aria-label="Archive ticket"
+                      className="w-6 h-6 rounded flex items-center justify-center text-white/10 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+                      </svg>
+                    </button>
+                  )}
+                  <svg className="w-3.5 h-3.5 text-white/10 group-hover:text-white/25 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
               </div>
             );
@@ -381,71 +301,62 @@ export default function TicketList({ tickets, isStaff }: TicketListProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <span className="text-xs text-text-muted">
-            Page {safePage} of {totalPages}
+        <div className="flex items-center justify-between mt-6">
+          <span className="text-[11px] text-white/15">
+            {filtered.length} ticket{filtered.length !== 1 ? "s" : ""} · Page {safePage}/{totalPages}
           </span>
           <div className="flex items-center gap-1">
-            <button
-              onClick={() => setPage(1)}
-              disabled={safePage === 1}
-              className="px-2.5 py-1.5 rounded-lg border border-white/[0.06] text-xs text-text-muted hover:text-text hover:border-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
-              </svg>
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={safePage === 1}
-              className="px-2.5 py-1.5 rounded-lg border border-white/[0.06] text-xs text-text-muted hover:text-text hover:border-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Prev
-            </button>
+            <button onClick={() => setPage(1)} disabled={safePage === 1} className="px-2 py-1 rounded text-[11px] text-white/25 hover:text-white/50 disabled:opacity-20 transition-colors">&laquo;</button>
+            <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={safePage === 1} className="px-2 py-1 rounded text-[11px] text-white/25 hover:text-white/50 disabled:opacity-20 transition-colors">&lsaquo;</button>
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pageNum: number;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (safePage <= 3) {
-                pageNum = i + 1;
-              } else if (safePage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = safePage - 2 + i;
-              }
+              if (totalPages <= 5) pageNum = i + 1;
+              else if (safePage <= 3) pageNum = i + 1;
+              else if (safePage >= totalPages - 2) pageNum = totalPages - 4 + i;
+              else pageNum = safePage - 2 + i;
               return (
                 <button
                   key={pageNum}
                   onClick={() => setPage(pageNum)}
-                  className={`w-8 h-8 rounded-lg text-xs font-medium transition-colors ${
+                  className={`w-7 h-7 rounded text-[11px] transition-colors ${
                     safePage === pageNum
-                      ? "bg-crimson/20 border border-crimson/40 text-crimson"
-                      : "border border-white/[0.06] text-text-muted hover:text-text hover:border-white/[0.12]"
+                      ? "bg-crimson/20 text-crimson"
+                      : "text-white/25 hover:text-white/50"
                   }`}
                 >
                   {pageNum}
                 </button>
               );
             })}
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={safePage === totalPages}
-              className="px-2.5 py-1.5 rounded-lg border border-white/[0.06] text-xs text-text-muted hover:text-text hover:border-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              Next
-            </button>
-            <button
-              onClick={() => setPage(totalPages)}
-              disabled={safePage === totalPages}
-              className="px-2.5 py-1.5 rounded-lg border border-white/[0.06] text-xs text-text-muted hover:text-text hover:border-white/[0.12] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-            >
-              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
-              </svg>
-            </button>
+            <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={safePage === totalPages} className="px-2 py-1 rounded text-[11px] text-white/25 hover:text-white/50 disabled:opacity-20 transition-colors">&rsaquo;</button>
+            <button onClick={() => setPage(totalPages)} disabled={safePage === totalPages} className="px-2 py-1 rounded text-[11px] text-white/25 hover:text-white/50 disabled:opacity-20 transition-colors">&raquo;</button>
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        title="Archive this ticket?"
+        message={
+          pendingDelete
+            ? `"${pendingDelete.subject}" will be moved to the archive with its full transcript preserved. Only authorized staff can view or restore it later.`
+            : ""
+        }
+        confirmLabel="Archive Ticket"
+        danger
+        busy={deleting}
+        error={deleteError}
+        showReason={isStaff}
+        onConfirm={handleDelete}
+        onCancel={() => setPendingDelete(null)}
+      />
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 }

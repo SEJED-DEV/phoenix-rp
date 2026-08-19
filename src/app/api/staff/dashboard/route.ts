@@ -10,6 +10,8 @@ import {
 } from "@/lib/application-questions";
 import { ON_SITE_APPLICATIONS } from "@/lib/apply.config";
 import { isSiteAppearanceOwner } from "@/lib/site-appearance-access";
+import { canEditSiteScope } from "@/lib/site-config-access";
+import { canEditStreamers } from "@/lib/streamers-access";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,6 +27,8 @@ export async function GET(req: NextRequest) {
     const canReviewApplications = isAdmin || viewable.length > 0;
     const canEditQuestionsFlag =
       isAdmin || ON_SITE_APPLICATIONS.some((slug) => canEditQuestions(userId, roles, slug));
+    const canEditGallery = isSiteOwner || canEditSiteScope(userId, roles, "gallery");
+    const canEditStreamersFlag = isSiteOwner || (await canEditStreamers(userId, roles));
 
     const db = getDb();
 
@@ -87,6 +91,8 @@ export async function GET(req: NextRequest) {
       roleLevel,
       canReviewApplications,
       canEditQuestions: canEditQuestionsFlag,
+      canEditGallery,
+      canEditStreamers: canEditStreamersFlag,
       isSiteOwner,
       totalMembers,
       staffTotal,

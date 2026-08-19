@@ -134,6 +134,7 @@ const NAV = [
   { id: "tickets", label: "Tickets" },
   { id: "applications", label: "Applications" },
   { id: "config", label: "Config & Questions" },
+  { id: "streamers", label: "Streamers" },
   { id: "shop", label: "Shop" },
   { id: "logs", label: "Activity Logs" },
   { id: "members", label: "Members & Punishments" },
@@ -388,12 +389,22 @@ export default function StaffDocsPage() {
                 />
               </Sub>
 
+              <Sub title="Creating a ticket">
+                <P>
+                  Press <strong className="text-text">New Ticket</strong> on the tickets page, pick a type, enter a
+                  subject and description, then press Submit. A confirmation prompt will appear showing the selected type
+                  and subject — review it carefully before confirming, since changing the type later may cause you to
+                  lose access to the ticket.
+                </P>
+              </Sub>
+
               <Sub title="Staff controls (top of the thread)">
                 <DocTable
                   head={["Control", "What it does"]}
                   rows={[
                     ["Status dropdown", "Switch between Open / In Progress / Closed."],
                     ["Priority dropdown", "Raise or lower the priority level."],
+                    ["Type dropdown", "Change the ticket type. A confirmation prompt warns you that you may lose access if the new type is restricted to roles you don't hold."],
                     ["Assign / Unassign", "Claim the ticket or release it back to the pool."],
                     ["Remind", "DM the member a reminder; falls back to the #ticket-reminders channel if DMs are closed."],
                   ]}
@@ -404,6 +415,14 @@ export default function StaffDocsPage() {
                 <p>
                   Anything written as an internal note can be seen by every staff member, so keep it professional and
                   factual. Members never see internal notes, but they <em>do</em> see everything else in the thread.
+                </p>
+              </Callout>
+
+              <Callout tone="warn" title="Changing ticket type may cause loss of access">
+                <p>
+                  If you change a ticket&apos;s type to one restricted to higher-ranking roles, you may lose access to
+                  that ticket. A confirmation prompt will warn you before the change goes through. If you accidentally
+                  change the type and lose access, ask a Manager or Owner to change it back.
                 </p>
               </Callout>
 
@@ -619,10 +638,83 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 6. Shop ──────────────────────────────────── */}
+            {/* ── 6. Streamers ──────────────────────────────── */}
+            <Section
+              id="streamers"
+              num="06"
+              title="Streamers"
+              intro="The streamers page showcases the community's content creators on a public roster. Authorized editors manage the list from the staff panel."
+            >
+              <P>
+                The public streamers page at <Inline>/streamers</Inline> displays a roster of community streamers with
+                their platform, live status, viewer count, and social links. Live streamers appear at the top with a glow
+                indicator; offline streamers are listed below in a dimmer style. Platform filter pills let visitors narrow
+                the list by Twitch, YouTube, Kick, or TikTok.
+              </P>
+
+              <Sub title="Who can manage streamers">
+                <P>
+                  Only the <strong className="text-text">site owner</strong> or staff members granted{" "}
+                  <strong className="text-text">streamer editor</strong> access can open the streamers config at{" "}
+                  <Inline>/staff-panel/config/streamers</Inline>. Access is configured by the site owner.
+                </P>
+              </Sub>
+
+              <Sub title="Adding a streamer">
+                <Steps
+                  items={[
+                    <>
+                      Paste a streamer&apos;s channel URL (Twitch, YouTube, Kick, or TikTok) into the URL input. The
+                      platform, username, and channel URL are detected automatically.
+                    </>,
+                    <>
+                      For <strong className="text-text">Kick</strong> channels, the display name, avatar, and social
+                      links (Twitter, Instagram, YouTube, TikTok, Discord, Facebook) are fetched from the Kick API
+                      automatically. For other platforms, fill in the display name and avatar manually.
+                    </>,
+                    <>
+                      Social links can be edited manually — add, remove, or change URLs for any supported platform.
+                    </>,
+                    <>
+                      Press <strong className="text-text">Save</strong> to persist the list. Order can be rearranged with
+                      the up / down arrows.
+                    </>,
+                  ]}
+                />
+              </Sub>
+
+              <Sub title="Supported platforms">
+                <DocTable
+                  head={["Platform", "What is auto-filled"]}
+                  rows={[
+                    ["Kick", "Username, display name, avatar, channel URL, and social links (Twitter, Instagram, YouTube, TikTok, Discord, Facebook)."],
+                    ["Twitch", "Username and channel URL. Display name and avatar must be entered manually."],
+                    ["YouTube", "Channel URL and username (from channel ID). Display name and avatar must be entered manually."],
+                    ["TikTok", "Username and channel URL. Display name and avatar must be entered manually."],
+                  ]}
+                />
+                <Callout tone="info" title="Social links are fetched live from Kick">
+                  <p>
+                    When a Kick URL is pasted, the editor fetches social links directly from the Kick API via the
+                    browser. This may occasionally fail if Kick blocks the request — you can always add or correct
+                    social links manually.
+                  </p>
+                </Callout>
+              </Sub>
+
+              <Sub title="Live status">
+                <P>
+                  The public page checks live status for all platforms. Kick and Twitch use their APIs directly; YouTube
+                  uses oEmbed. Live streamers are shown at the top with a colored glow and viewer count. This is
+                  determined at page load — there is no background refresh.
+                </P>
+              </Sub>
+            </Section>
+
+            {/* ── 7. Shop ──────────────────────────────────── */}
             <Section
               id="shop"
-              num="06"
+              num="07"
               title="Shop"
               intro="The shop is what players see on the public /shop page. Management & Owner control everything about it from a single editor."
             >
@@ -712,10 +804,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 7. Activity Logs ─────────────────────────── */}
+            {/* ── 8. Activity Logs ─────────────────────────── */}
             <Section
               id="logs"
-              num="07"
+              num="08"
               title="Activity Logs"
               intro="Every staff action is recorded — punishments, application decisions, ticket actions, config changes, and question edits."
             >
@@ -759,10 +851,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 8. Members & Punishments ─────────────────── */}
+            {/* ── 9. Members & Punishments ─────────────────── */}
             <Section
               id="members"
-              num="08"
+              num="09"
               title="Members & Punishments"
               intro="The member management page lets you search the server, inspect a member's roles and existing punishments, and issue punishments."
             >
@@ -814,10 +906,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 9. Role Manager ──────────────────────────── */}
+            {/* ── 10. Role Manager ──────────────────────────── */}
             <Section
               id="roles"
-              num="09"
+              num="10"
               title="Role Manager"
               intro="Grant and remove member roles without leaving the panel. Every change is logged and posted to Discord."
             >
@@ -871,10 +963,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 10. Discord Notifications ────────────────── */}
+            {/* ── 11. Discord Notifications ────────────────── */}
             <Section
               id="notifications"
-              num="10"
+              num="11"
               title="Discord Notifications"
               intro="The site posts to a few Discord channels so the team is never blind to what is happening."
             >
@@ -896,10 +988,10 @@ export default function StaffDocsPage() {
               </Callout>
             </Section>
 
-            {/* ── 10. Best Practices ───────────────────────── */}
+            {/* ── 12. Best Practices ───────────────────────── */}
             <Section
               id="best-practices"
-              num="11"
+              num="12"
               title="Best Practices"
               intro="A short code of conduct for working on the panel. Following this keeps the team consistent and the community happy."
             >
@@ -916,8 +1008,8 @@ export default function StaffDocsPage() {
               />
             </Section>
 
-            {/* ── 11. FAQ ──────────────────────────────────── */}
-            <Section id="faq" num="12" title="FAQ">
+            {/* ── 13. FAQ ──────────────────────────────────── */}
+            <Section id="faq" num="13" title="FAQ">
               <div className="space-y-4">
                 <div className="rounded-xl border border-white/[0.06] bg-white/[0.015] px-4 py-3">
                   <p className="text-sm font-bold text-text mb-1">I can log in but the staff panel says I don't have access.</p>

@@ -3,10 +3,18 @@ import fs from "fs";
 import path from "path";
 import { getSiteBranding } from "@/lib/site-branding";
 import { getSiteLogoDiskPath, isValidSiteLogoName, SITE_LOGO_EXTENSIONS } from "@/lib/site-uploads";
+import { getSession } from "@/lib/auth";
+import { getThemeForUser } from "@/lib/user-themes.config";
 
 const FALLBACK_LOGO = path.join(process.cwd(), "public", "logo.png");
 
 export async function GET() {
+  const session = await getSession();
+  const userTheme = getThemeForUser(session?.userId);
+  if (userTheme?.logo) {
+    return NextResponse.redirect(userTheme.logo, 302);
+  }
+
   const branding = await getSiteBranding();
 
   if (branding.siteLogo && isValidSiteLogoName(branding.siteLogo)) {

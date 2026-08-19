@@ -51,6 +51,9 @@ export function getDb(): Database.Database {
   if (!colNames.includes("userRole")) {
     _db.exec("ALTER TABLE tickets ADD COLUMN userRole TEXT DEFAULT NULL");
   }
+  if (!colNames.includes("archivedAt")) {
+    _db.exec("ALTER TABLE tickets ADD COLUMN archivedAt TEXT DEFAULT NULL");
+  }
 
   _db.exec(`
     CREATE TABLE IF NOT EXISTS ticket_messages (
@@ -301,6 +304,27 @@ export function getDb(): Database.Database {
     )
   `);
 
+  // ─── Gallery metadata ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS gallery_items (
+      filename TEXT PRIMARY KEY,
+      description TEXT NOT NULL DEFAULT '',
+      credits TEXT NOT NULL DEFAULT '',
+      position INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
+  const galleryCols = _db.prepare("PRAGMA table_info(gallery_items)").all() as { name: string }[];
+  const galleryColNames = galleryCols.map((c) => c.name);
+  if (!galleryColNames.includes("credits")) {
+    _db.exec("ALTER TABLE gallery_items ADD COLUMN credits TEXT NOT NULL DEFAULT ''");
+  }
+  if (!galleryColNames.includes("src")) {
+    _db.exec("ALTER TABLE gallery_items ADD COLUMN src TEXT NOT NULL DEFAULT ''");
+    _db.exec("UPDATE gallery_items SET src = '/media/' || filename WHERE src = '' AND filename NOT LIKE 'http%'");
+  }
+
   // ─── Application Tables (one per department) ───
 
   const APPLICATION_SLUGS = [
@@ -329,6 +353,27 @@ export function getDb(): Database.Database {
         reviewedAt TEXT
       )
     `);
+  }
+
+  // ─── Streamers ───
+
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS streamers (
+      id TEXT PRIMARY KEY,
+      platform TEXT NOT NULL DEFAULT 'twitch',
+      username TEXT NOT NULL,
+      displayName TEXT NOT NULL DEFAULT '',
+      avatarUrl TEXT NOT NULL DEFAULT '',
+      channelUrl TEXT NOT NULL DEFAULT '',
+      socialLinks TEXT NOT NULL DEFAULT '[]',
+      position INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
+  const streamerCols = _db.prepare("PRAGMA table_info(streamers)").all() as { name: string }[];
+  const streamerColNames = streamerCols.map((c) => c.name);
+  if (!streamerColNames.includes("socialLinks")) {
+    _db.exec("ALTER TABLE streamers ADD COLUMN socialLinks TEXT NOT NULL DEFAULT '[]'");
   }
 
   return _db;

@@ -14,6 +14,11 @@ interface GrantRow {
 }
 
 const SCOPE_META: Record<string, { label: string; hint: string; border: string }> = {
+  site: {
+    label: "Site Branding",
+    hint: "Can edit the full site identity — name, tagline, logo, colours and SEO. Owners always keep this too.",
+    border: "color-mix(in srgb, var(--color-crimson) 30%, transparent)",
+  },
   links: {
     label: "Community Links",
     hint: "Can change the Discord invite link and server IP. Brand identity (name, logo, colours, SEO) stays owner-only.",

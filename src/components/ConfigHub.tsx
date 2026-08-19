@@ -257,6 +257,92 @@ export default function ConfigHub() {
             </div>
           </Link>
         )}
+        {/* Gallery editor */}
+        {data.canEditGallery && (
+          <Link
+            href="/staff-panel/config/gallery"
+            className="group relative rounded-2xl overflow-hidden stagger-4 transition-colors hover:border-emerald-400/25"
+            style={{
+              background: "linear-gradient(160deg, rgba(16,185,129,0.04) 0%, rgba(255,255,255,0.01) 100%)",
+              border: "1px solid rgba(16,185,129,0.15)",
+            }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, rgba(16,185,129,0.50), rgba(255,255,255,0.02) 65%, transparent)" }} />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-emerald-400"
+                  style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.25)" }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.6}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M3.75 21h16.5A2.25 2.25 0 0022.5 18.75V5.25A2.25 2.25 0 0020.25 3H3.75A2.25 2.25 0 001.5 5.25v13.5A2.25 2.25 0 003.75 21z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display text-sm tracking-[0.15em] uppercase text-white">Gallery</h2>
+                  <p className="text-[10px] text-text-muted mt-0.5">Media &amp; descriptions</p>
+                </div>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 text-emerald-400 shrink-0">
+                  Gallery
+                </span>
+              </div>
+              <p className="text-text-muted text-xs mb-4">
+                Upload images, add descriptions and control the order of media shown on the public /gallery page.
+              </p>
+              <span className="inline-flex items-center gap-2 text-[11px] font-medium text-emerald-400 transition-colors group-hover:text-emerald-400/80">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.20)" }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </span>
+                Edit gallery
+              </span>
+            </div>
+          </Link>
+        )}
+        {/* Streamers */}
+        {data.canEditStreamers && (
+          <Link
+            href="/staff-panel/config/streamers"
+            className="group relative rounded-2xl overflow-hidden stagger-4 transition-colors hover:border-purple-400/25"
+            style={{
+              background: "linear-gradient(160deg, rgba(167,139,250,0.04) 0%, rgba(255,255,255,0.01) 100%)",
+              border: "1px solid rgba(167,139,250,0.15)",
+            }}
+          >
+            <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(90deg, rgba(167,139,250,0.50), rgba(255,255,255,0.02) 65%, transparent)" }} />
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-purple-400"
+                  style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.25)" }}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.6}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 10.5l4.72-4.72a.75.75 0 011.28.53v11.38a.75.75 0 01-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 002.25-2.25v-9a2.25 2.25 0 00-2.25-2.25h-9A2.25 2.25 0 002.25 7.5v9a2.25 2.25 0 002.25 2.25z" />
+                  </svg>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display text-sm tracking-[0.15em] uppercase text-white">Streamers</h2>
+                  <p className="text-[10px] text-text-muted mt-0.5">Channel directory</p>
+                </div>
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full border border-purple-400/25 bg-purple-400/10 text-purple-400 shrink-0">
+                  Streamers
+                </span>
+              </div>
+              <p className="text-text-muted text-xs mb-4">
+                Manage the list of streamers shown on the public /streamers page.
+              </p>
+              <span className="inline-flex items-center gap-2 text-[11px] font-medium text-purple-400 transition-colors group-hover:text-purple-400/80">
+                <span className="inline-flex items-center justify-center w-5 h-5 rounded-md" style={{ background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.20)" }}>
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                  </svg>
+                </span>
+                Edit streamers
+              </span>
+            </div>
+          </Link>
+        )}
         {/* Site Appearance */}
         {data.isSiteOwner || data.canEditLinks ? (
           <Link

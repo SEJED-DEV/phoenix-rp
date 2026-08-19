@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
-import { createTicket, getTicketsByUser, getAllTickets, hasOpenTicketOfType, type TicketAttachment } from "@/lib/tickets.db";
-import { getTicketType, getAvailableTicketTypes, canViewTicketType } from "@/lib/tickets.config";
+import { createTicket, getTicketsByUser, getAllTickets, getArchivedTickets, hasOpenTicketOfType, type TicketAttachment } from "@/lib/tickets.db";
+import { getTicketType, getAvailableTicketTypes, canViewTicketType, canAccessTicketArchive, TICKET_DELETE_POLICY } from "@/lib/tickets.config";
 import { sendTicketNotification } from "@/lib/tickets.webhook";
 import { getHighestRole } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
@@ -11,25 +11,42 @@ function getUploadedFiles(form: FormData): UploadFile[] {
   return (form.getAll("files") || []).filter((f): f is File => typeof f !== "string");
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   const session = await ensureSessionRoles();
   if (!session) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   const isStaff = session.isStaff || false;
-  console.log("[tickets] GET session:", session.userId, "isStaff:", isStaff, "roles:", session.roles);
-
   const roles = session.roles || [];
   const availableTypes = getAvailableTicketTypes(roles);
 
-  const allTickets = isStaff ? getAllTickets() : getTicketsByUser(session.userId);
-  const tickets = allTickets.filter((t) => {
-    const ticketType = getTicketType(t.type);
-    return t.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
-  });
+  const showArchived = req.nextUrl.searchParams.get("archived") === "1";
 
-  return NextResponse.json({ tickets, isStaff, availableTypes });
+  let tickets;
+  if (showArchived) {
+    if (!isStaff || !canAccessTicketArchive(roles)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    tickets = getArchivedTickets().filter((t) => {
+      const ticketType = getTicketType(t.type);
+      return t.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+    });
+  } else {
+    const allTickets = isStaff ? getAllTickets() : getTicketsByUser(session.userId);
+    tickets = allTickets.filter((t) => {
+      const ticketType = getTicketType(t.type);
+      return t.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+    });
+  }
+
+  return NextResponse.json({
+    tickets,
+    isStaff,
+    availableTypes,
+    deletePolicy: TICKET_DELETE_POLICY,
+    canViewArchive: isStaff && canAccessTicketArchive(roles),
+  });
 }
 
 export async function POST(req: NextRequest) {

@@ -4,16 +4,26 @@ import {
   getTicketById,
   updateTicketStatus,
   updateTicketPriority,
+  updateTicketType,
   assignTicket,
   addTicketMessage,
   getTicketMessagesPaginated,
+  getTicketMessagesForStaff,
   getTicketAttachments,
   getInternalMessageIds,
+  archiveTicket,
   type Ticket,
   type TicketAttachment,
 } from "@/lib/tickets.db";
-import { getTicketType, canViewTicketType } from "@/lib/tickets.config";
+import {
+  getTicketType,
+  canViewTicketType,
+  canDeleteTicket,
+  canAccessTicketArchive,
+  TICKET_DELETE_POLICY,
+} from "@/lib/tickets.config";
 import { validateUploadFiles, saveTicketAttachments, type UploadFile } from "@/lib/ticket-uploads";
+import { logStaffAction } from "@/lib/activity-log";
 
 function getUploadedFiles(form: FormData): UploadFile[] {
   return (form.getAll("files") || []).filter((f): f is File => typeof f !== "string");
@@ -37,6 +47,10 @@ export async function GET(
   const isStaff = session.isStaff || false;
   const roles = session.roles || [];
 
+  if (ticket.archivedAt && !canAccessTicketArchive(roles)) {
+    return NextResponse.json({ error: "Archived tickets are restricted to authorized staff." }, { status: 403 });
+  }
+
   const ticketType = getTicketType(ticket.type);
   const canView =
     ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
@@ -46,6 +60,18 @@ export async function GET(
 
   const page = Math.max(1, parseInt(req.nextUrl.searchParams.get("page") || "1", 10));
   const limit = 50;
+
+  const transcript = req.nextUrl.searchParams.get("transcript") === "1";
+  if (transcript) {
+    const allMessages = getTicketMessagesForStaff(id);
+    const allAttachments = getTicketAttachments(id);
+    return NextResponse.json({
+      ticket,
+      messages: allMessages,
+      attachments: allAttachments,
+      transcript: true,
+    });
+  }
 
   const { messages, total } = getTicketMessagesPaginated(id, page, limit, isStaff);
 
@@ -60,6 +86,9 @@ export async function GET(
     ticket,
     messages,
     attachments,
+    deletePolicy: TICKET_DELETE_POLICY,
+    isArchived: !!ticket.archivedAt,
+    canViewArchive: canAccessTicketArchive(roles),
     pagination: {
       page,
       limit,
@@ -85,11 +114,15 @@ export async function PATCH(
 
   const { id } = await params;
   const body = await req.json();
-  const { status, priority, assignedTo, assignedToUsername } = body;
+  const { status, priority, type, assignedTo, assignedToUsername } = body;
 
   const ticket = getTicketById(id);
   if (!ticket) {
     return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  if (ticket.archivedAt) {
+    return NextResponse.json({ error: "Archived tickets cannot be edited. Restore it first." }, { status: 403 });
   }
 
   const roles = session.roles || [];
@@ -114,6 +147,14 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid priority" }, { status: 400 });
     }
     updated = updateTicketPriority(id, priority as Ticket["priority"])!;
+  }
+
+  if (type) {
+    const validTypes = ["general", "ban-appeal", "complaint", "bug-report", "refund", "high-rank", "partnership", "donation"];
+    if (!validTypes.includes(type)) {
+      return NextResponse.json({ error: "Invalid ticket type" }, { status: 400 });
+    }
+    updated = updateTicketType(id, type)!;
   }
 
   if (assignedTo !== undefined) {
@@ -143,8 +184,12 @@ export async function POST(
   }
 
   const isStaff = session.isStaff || false;
-
   const roles = session.roles || [];
+
+  if (ticket.archivedAt) {
+    return NextResponse.json({ error: "This ticket is archived and read-only. Restore it to reply." }, { status: 403 });
+  }
+
   const ticketType = getTicketType(ticket.type);
   const canView =
     ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
@@ -201,4 +246,70 @@ export async function POST(
   }
 
   return NextResponse.json({ message, ticket: updatedTicket, attachments }, { status: 201 });
+}
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const session = await ensureSessionRoles();
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { id } = await params;
+  const ticket = getTicketById(id);
+  if (!ticket) {
+    return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  const isStaff = session.isStaff || false;
+  const roles = session.roles || [];
+
+  if (ticket.archivedAt && !canAccessTicketArchive(roles)) {
+    return NextResponse.json({ error: "This ticket is already archived." }, { status: 400 });
+  }
+
+  const ticketType = getTicketType(ticket.type);
+  const canView =
+    ticket.userId === session.userId || (ticketType ? canViewTicketType(ticketType, roles) : false);
+  if (!canView) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  if (!canDeleteTicket(isStaff, session.userId, ticket)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let reason = "";
+  try {
+    const body = (await req.json()) as { reason?: unknown };
+    if (typeof body?.reason === "string") reason = body.reason.trim();
+  } catch {
+    reason = "";
+  }
+
+  const archived = archiveTicket(id);
+  if (!archived) {
+    return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
+  }
+
+  if (isStaff) {
+    logStaffAction({
+      actorId: session.userId,
+      actorName: session.username,
+      action: "ticket_archive",
+      targetId: ticket.id,
+      targetName: ticket.subject,
+      reason: reason || undefined,
+      metadata: {
+        userId: ticket.userId,
+        username: ticket.username,
+        type: ticket.type,
+        priority: ticket.priority,
+      },
+    });
+  }
+
+  return NextResponse.json({ ok: true });
 }

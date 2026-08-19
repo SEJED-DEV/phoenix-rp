@@ -1,20 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isSiteAppearanceOwner } from "@/lib/site-appearance-access";
+import { getUserRolesFromHeaders } from "@/lib/permissions";
+import { canEditSiteScope } from "@/lib/site-config-access";
 import { saveSiteLogo, deleteSiteLogo, isValidSiteLogoName } from "@/lib/site-uploads";
 import { getSiteBranding, updateSiteBranding } from "@/lib/site-branding";
 import { logStaffAction } from "@/lib/activity-log";
 
-async function assertOwner(req: NextRequest): Promise<string | null> {
+async function assertEditor(req: NextRequest): Promise<string | null> {
   const userId = req.headers.get("x-user-id") || "";
-  const owner = await isSiteAppearanceOwner(userId);
-  if (!owner) return null;
-  return userId;
+  if (!userId) return null;
+  if (await isSiteAppearanceOwner(userId)) return userId;
+  const roles = getUserRolesFromHeaders(req.headers);
+  if (canEditSiteScope(userId, roles, "site")) return userId;
+  return null;
 }
 
 export async function POST(req: NextRequest) {
-  const userId = await assertOwner(req);
+  const userId = await assertEditor(req);
   if (!userId) {
-    return NextResponse.json({ error: "Only the site owner can change the logo." }, { status: 403 });
+    return NextResponse.json({ error: "Only the site owner or a site branding editor can change the logo." }, { status: 403 });
   }
   const username = req.headers.get("x-user-name") || "";
 
@@ -51,9 +55,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const userId = await assertOwner(req);
+  const userId = await assertEditor(req);
   if (!userId) {
-    return NextResponse.json({ error: "Only the site owner can change the logo." }, { status: 403 });
+    return NextResponse.json({ error: "Only the site owner or a site branding editor can change the logo." }, { status: 403 });
   }
   const username = req.headers.get("x-user-name") || "";
 

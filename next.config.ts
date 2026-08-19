@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "i3.ytimg.com" },
       { protocol: "https", hostname: "i4.ytimg.com" },
       { protocol: "https", hostname: "i9.ytimg.com" },
+      { protocol: "https", hostname: "cdn.cortexhq.net" },
     ],
   },
 };

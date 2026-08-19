@@ -1,7 +1,12 @@
 import { getSiteBranding } from "@/lib/site-branding";
+import { getSession } from "@/lib/auth";
+import { getThemeForUser } from "@/lib/user-themes.config";
 
 export default async function Footer() {
   const { siteName, siteTagline, discordInvite, serverIp } = await getSiteBranding();
+  const session = await getSession();
+  const userTheme = getThemeForUser(session?.userId);
+  const displayName = userTheme?.siteName || siteName;
   return (
     <footer id="join" className="relative border-t border-white/[0.04] pb-16 lg:pb-0">
       <div className="fire-line" />
@@ -12,7 +17,7 @@ export default async function Footer() {
           <div className="md:text-center">
             <div className="flex items-center justify-center md:justify-center gap-3.5 mb-5">
               <img src="/api/site/logo" alt="Logo" className="w-10 h-10 object-contain" />
-              <h3 className="font-display text-xl sm:text-2xl tracking-wider">{siteName}</h3>
+              <h3 className="font-display text-xl sm:text-2xl tracking-wider">{displayName}</h3>
             </div>
             <p className="text-text-muted text-[13px] sm:text-sm leading-relaxed max-w-xs mx-auto md:mx-auto">
               {siteTagline}
@@ -73,7 +78,7 @@ export default async function Footer() {
         <div className="fire-line mt-12 mb-6" />
 
         <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-text-muted text-[11px]">
-          <p>&copy; {new Date().getFullYear()} {siteName}. All rights reserved.</p>
+          <p>&copy; {new Date().getFullYear()} {displayName}. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <a
               href={discordInvite}

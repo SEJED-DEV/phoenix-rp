@@ -6,6 +6,8 @@ import { SiteBrandProvider } from "@/contexts/SiteBrandContext";
 import PinnedNotification from "@/components/PinnedNotification";
 import { getSiteBranding } from "@/lib/site-branding";
 import { BRAND_COLOR_KEYS } from "@/lib/site-branding.types";
+import { getSession } from "@/lib/auth";
+import { getThemeForUser } from "@/lib/user-themes.config";
 import "./globals.css";
 
 const bebas = Bebas_Neue({
@@ -42,9 +44,20 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const branding = await getSiteBranding();
-  const vars = Object.fromEntries(
-    BRAND_COLOR_KEYS.map((key) => [`--color-${key}`, branding.colors[key]])
-  ) as React.CSSProperties;
+  const session = await getSession();
+  const userTheme = getThemeForUser(session?.userId);
+
+  const colors = userTheme ? { ...branding.colors, ...userTheme.colors } : branding.colors;
+  const vars = {
+    ...Object.fromEntries(BRAND_COLOR_KEYS.map((key) => [`--color-${key}`, colors[key]])),
+    ...(userTheme?.extra ?? {}),
+    ...(userTheme?.backgroundImage
+      ? {
+          "--user-bg-image": `url(${userTheme.backgroundImage})`,
+          "--user-bg-overlay": userTheme.backgroundOverlay ?? "rgba(0,0,0,0.65)",
+        }
+      : {}),
+  } as React.CSSProperties;
 
   return (
     <html lang="en" className={`${bebas.variable} ${dmSans.variable}`} style={vars}>

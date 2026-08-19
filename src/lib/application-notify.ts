@@ -19,7 +19,10 @@ function toV2(container: ContainerBuilder): unknown[] {
   return [container.toJSON()];
 }
 
-function reviewLink(baseUrl: string, dept: string): string {
+function reviewLink(baseUrl: string, dept: string, id?: number): string {
+  if (id != null) {
+    return `[Staff Panel → Application #${id}](${baseUrl}/staff-panel/applications/${dept}/${id})`;
+  }
   return `[Staff Panel → Applications](${baseUrl}/staff-panel/applications/${dept})`;
 }
 
@@ -68,12 +71,12 @@ export async function notifyApplicationResult(info: ApplicationResultInfo, baseU
   const label = `**${config?.label ?? info.dept}**`;
   const statusText = approved ? "approved" : "denied";
   const noteLine = info.note ? `Reviewer note: ${info.note}` : null;
-  const reviewerLine = info.reviewerName ? `Reviewed by: ${info.reviewerName}` : null;
+  const reviewerLine = info.reviewerId ? `Reviewed by <@${info.reviewerId}>` : null;
 
   const channelLines = [
     `@here **Application ${approved ? "Approved" : "Denied"}**`,
     `<@${info.discordId}> — ${info.username}'s application for ${label} was ${statusText}.`,
-    reviewLink(baseUrl, info.dept),
+    reviewLink(baseUrl, info.dept, info.id),
   ];
   if (noteLine) channelLines.push(noteLine);
   if (reviewerLine) channelLines.push(reviewerLine);
@@ -83,7 +86,6 @@ export async function notifyApplicationResult(info: ApplicationResultInfo, baseU
     `<@${info.discordId}> — your application for ${label} was ${statusText}.`,
   ];
   if (noteLine) dmLines.push(noteLine);
-  if (reviewerLine) dmLines.push(reviewerLine);
 
   const channelContainer = new ContainerBuilder()
     .setAccentColor(approved ? COLORS.approved : COLORS.denied)

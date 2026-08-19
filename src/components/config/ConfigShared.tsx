@@ -37,6 +37,8 @@ export interface ConfigData {
   isSiteOwner?: boolean;
   canEditLinks?: boolean;
   canEditContent?: boolean;
+  canEditGallery?: boolean;
+  canEditStreamers?: boolean;
 }
 
 export interface Toast {

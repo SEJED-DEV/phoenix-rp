@@ -30,6 +30,11 @@ async function getScopes(req: NextRequest): Promise<{ isOwner: boolean; scopes: 
   return { isOwner, scopes };
 }
 
+/** True when the user may edit the whole branding (owner or granted the "site" scope). */
+function canEditFullBranding(isOwner: boolean, scopes: SiteConfigScope[]): boolean {
+  return isOwner || scopes.includes("site");
+}
+
 export async function GET(req: NextRequest) {
   const { isOwner, scopes } = await getScopes(req);
   if (!isOwner && scopes.length === 0) {
@@ -64,7 +69,9 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  if (!isOwner) {
+  const fullEditor = canEditFullBranding(isOwner, scopes);
+
+  if (!fullEditor) {
     const current = await getSiteBranding();
     const attempted: string[] = [];
 

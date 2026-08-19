@@ -90,7 +90,8 @@ export default function SiteBrandingEditor() {
 
   const isOwner = data?.isOwner ?? false;
   const canEditLinks = data?.scopes?.includes("links") ?? false;
-  const canEditSomething = canEditLinks || isOwner;
+  const canEditSite = isOwner || (data?.scopes?.includes("site") ?? false);
+  const canEditSomething = canEditLinks || canEditSite;
   const lockedNote = (
     <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border border-crimson/40 bg-crimson/10 text-crimson shrink-0">
       <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
@@ -135,7 +136,7 @@ export default function SiteBrandingEditor() {
 
   const resetDefaults = () => {
     if (!form) return;
-    if (!isOwner) {
+    if (!canEditSite) {
       flash("error", "Only the site owner can reset branding.");
       return;
     }
@@ -237,14 +238,16 @@ export default function SiteBrandingEditor() {
         <div className="flex items-center gap-2 mb-2">
           <span className="w-5 h-px" style={{ background: "linear-gradient(90deg, color-mix(in srgb, var(--color-gold) 80%, transparent), transparent)" }} />
           <span className="text-[10px] font-display tracking-[0.25em] uppercase text-gold">
-            {isOwner ? "Owner" : canEditLinks ? "Community Links Editor" : "Site Configuration"}
+            {isOwner ? "Owner" : canEditSite ? "Site Branding Editor" : canEditLinks ? "Community Links Editor" : "Site Configuration"}
           </span>
         </div>
         <h1 className="font-display text-2xl tracking-wider text-white">Site Appearance</h1>
         <p className="text-text-muted text-xs mt-1.5">
           {isOwner
-            ? "Change the name, tagline, logo and colour palette that visitors see across the entire site — or grant editors for the community links and content."
-            : "You can edit the Discord invite link and server IP. Identity fields (name, logo, colours, SEO) are locked to the owner."}
+            ? "Change the name, tagline, logo and colour palette that visitors see across the entire site — or grant editors for each section below."
+            : canEditSite
+              ? "You can edit the full site identity — name, tagline, logo, colours and SEO. Changes apply site-wide."
+              : "You can edit the Discord invite link and server IP. Identity fields (name, logo, colours, SEO) are locked."}
         </p>
       </div>
 
@@ -306,7 +309,7 @@ export default function SiteBrandingEditor() {
       <div className="rounded-2xl p-6 mb-6 stagger-3" style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)", border: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="font-display text-sm tracking-[0.15em] uppercase text-white">Logo</h2>
-          {!isOwner && lockedNote}
+          {!canEditSite && lockedNote}
         </div>
         <div className="flex items-center gap-4">
           {data.logoUrl ? (
@@ -319,7 +322,7 @@ export default function SiteBrandingEditor() {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => fileRef.current?.click()}
-              disabled={uploading || !isOwner}
+              disabled={uploading || !canEditSite}
               className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-gold border border-gold/25 bg-gold/10 hover:bg-gold/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {uploading ? "Uploading…" : "Upload logo"}
@@ -327,7 +330,7 @@ export default function SiteBrandingEditor() {
             {form.siteLogo && (
               <button
                 onClick={removeLogo}
-                disabled={saving || !isOwner}
+                disabled={saving || !canEditSite}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-xs font-medium text-[#f87171] border border-[#f87171]/25 bg-[#f87171]/10 hover:bg-[#f87171]/20 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 Remove logo
@@ -355,7 +358,7 @@ export default function SiteBrandingEditor() {
       <div className="rounded-2xl p-6 mb-6 stagger-3" style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)", border: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3 mb-4">
           <h2 className="font-display text-sm tracking-[0.15em] uppercase text-white">Identity</h2>
-          {!isOwner && lockedNote}
+          {!canEditSite && lockedNote}
         </div>
         <div className="grid grid-cols-1 gap-4">
           <div>
@@ -364,7 +367,7 @@ export default function SiteBrandingEditor() {
               className={isOwner ? inputClass : lockedInputClass}
               value={form.siteName}
               maxLength={60}
-              disabled={!isOwner}
+              disabled={!canEditSite}
               onChange={(e) => setForm((f) => (f ? { ...f, siteName: e.target.value } : f))}
             />
           </div>
@@ -374,7 +377,7 @@ export default function SiteBrandingEditor() {
               className={isOwner ? inputClass : lockedInputClass}
               value={form.siteTagline}
               maxLength={160}
-              disabled={!isOwner}
+              disabled={!canEditSite}
               onChange={(e) => setForm((f) => (f ? { ...f, siteTagline: e.target.value } : f))}
             />
           </div>
@@ -423,13 +426,13 @@ export default function SiteBrandingEditor() {
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2">
               <label className={labelClass}>Meta description</label>
-              {!isOwner && lockedNote}
+              {!canEditSite && lockedNote}
             </div>
             <input
               className={isOwner ? inputClass : lockedInputClass}
               value={form.metaDescription}
               maxLength={300}
-              disabled={!isOwner}
+              disabled={!canEditSite}
               onChange={(e) => setForm((f) => (f ? { ...f, metaDescription: e.target.value } : f))}
             />
             <p className="text-[10px] text-text-muted mt-1">Shown in Google search results and link previews.</p>
@@ -437,13 +440,13 @@ export default function SiteBrandingEditor() {
           <div className="sm:col-span-2">
             <div className="flex items-center gap-2">
               <label className={labelClass}>Meta keywords</label>
-              {!isOwner && lockedNote}
+              {!canEditSite && lockedNote}
             </div>
             <input
               className={isOwner ? inputClass : lockedInputClass}
               value={form.metaKeywords}
               maxLength={300}
-              disabled={!isOwner}
+              disabled={!canEditSite}
               placeholder="FiveM, Roleplay, ..."
               onChange={(e) => setForm((f) => (f ? { ...f, metaKeywords: e.target.value } : f))}
             />
@@ -455,7 +458,7 @@ export default function SiteBrandingEditor() {
       <div className="rounded-2xl p-6 mb-6 stagger-4" style={{ background: "linear-gradient(160deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%)", border: "1px solid rgba(255,255,255,0.05)" }}>
         <div className="flex items-center gap-3 mb-1">
           <h2 className="font-display text-sm tracking-[0.15em] uppercase text-white">Colour Palette</h2>
-          {!isOwner && lockedNote}
+          {!canEditSite && lockedNote}
         </div>
         <p className="text-text-muted text-[11px] mb-4">These colours drive every accent across the site.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -467,7 +470,7 @@ export default function SiteBrandingEditor() {
                 <input
                   type="color"
                   value={isHexColor(value) ? value : "#000000"}
-                  disabled={!isOwner}
+                  disabled={!canEditSite}
                   onChange={(e) => setColor(key, e.target.value)}
                   className="w-9 h-9 rounded-md cursor-pointer border border-white/[0.08] bg-transparent p-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
                 />
@@ -478,7 +481,7 @@ export default function SiteBrandingEditor() {
                   <input
                     className={`w-full bg-transparent text-xs font-mono outline-none ${invalid ? "text-[#f87171]" : "text-white"} ${isOwner ? "" : "opacity-40"}`}
                     value={value}
-                    disabled={!isOwner}
+                    disabled={!canEditSite}
                     onChange={(e) => setColor(key, e.target.value)}
                     onBlur={(e) => {
                       const v = e.target.value.trim();
@@ -488,7 +491,7 @@ export default function SiteBrandingEditor() {
                 </div>
                 <button
                   onClick={() => setColor(key, (data.defaults[key] ?? DEFAULT_BRAND_COLORS[key]).toLowerCase())}
-                  disabled={!isOwner}
+                  disabled={!canEditSite}
                   className="text-[10px] text-text-muted hover:text-white transition-colors shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Reset to default"
                 >
@@ -510,9 +513,9 @@ export default function SiteBrandingEditor() {
             className="px-5 py-2.5 rounded-lg text-xs font-medium text-white transition-colors disabled:opacity-50"
             style={{ background: "linear-gradient(135deg, var(--color-crimson), var(--color-ember))" }}
           >
-            {saving ? "Saving…" : isOwner ? "Save branding" : "Save links"}
+            {saving ? "Saving…" : isOwner ? "Save branding" : canEditSite ? "Save branding" : "Save links"}
           </button>
-          {isOwner && (
+          {canEditSite && (
             <button
               onClick={resetDefaults}
               disabled={saving}
