@@ -382,5 +382,19 @@ export function getDb(): Database.Database {
     _db.exec("ALTER TABLE streamers ADD COLUMN socialLinks TEXT NOT NULL DEFAULT '[]'");
   }
 
+  _db.exec(`
+    CREATE TABLE IF NOT EXISTS departed_members (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      username TEXT NOT NULL,
+      displayName TEXT NOT NULL DEFAULT '',
+      avatar TEXT NOT NULL DEFAULT '',
+      punishmentRoles TEXT NOT NULL DEFAULT '[]',
+      allRoles TEXT NOT NULL DEFAULT '[]',
+      leftAt TEXT NOT NULL,
+      rejoined INTEGER NOT NULL DEFAULT 0
+    )
+  `);
+
   return _db;
 }
