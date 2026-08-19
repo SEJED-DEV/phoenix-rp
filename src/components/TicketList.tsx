@@ -103,6 +103,13 @@ export default function TicketList({
     knownIds.current = currentIds;
   }, [currentIds]);
 
+  // Fire-and-forget: scan for stale tickets on mount (staff only via isStaff prop)
+  useEffect(() => {
+    if (isStaff) {
+      fetch("/api/tickets/stale").catch(() => {});
+    }
+  }, [isStaff]);
+
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const safePage = Math.min(page, totalPages);
   const paginated = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);

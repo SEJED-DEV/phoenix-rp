@@ -54,6 +54,12 @@ export function getDb(): Database.Database {
   if (!colNames.includes("archivedAt")) {
     _db.exec("ALTER TABLE tickets ADD COLUMN archivedAt TEXT DEFAULT NULL");
   }
+  if (!colNames.includes("reminderCooldownUntil")) {
+    _db.exec("ALTER TABLE tickets ADD COLUMN reminderCooldownUntil TEXT DEFAULT NULL");
+  }
+  if (!colNames.includes("lastStaffReminderAt")) {
+    _db.exec("ALTER TABLE tickets ADD COLUMN lastStaffReminderAt TEXT DEFAULT NULL");
+  }
 
   _db.exec(`
     CREATE TABLE IF NOT EXISTS ticket_messages (

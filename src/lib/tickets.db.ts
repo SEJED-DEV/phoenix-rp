@@ -297,3 +297,60 @@ export function deleteTicket(ticketId: string): DeletedTicket | null {
 
   return { ticket, storedNames };
 }
+
+export function canSendManualReminder(ticketId: string): { ok: boolean; retryAfterMs?: number } {
+  const db = getDb();
+  const row = db.prepare("SELECT reminderCooldownUntil FROM tickets WHERE id = ?").get(ticketId) as { reminderCooldownUntil: string | null } | undefined;
+  if (!row) return { ok: false };
+  if (!row.reminderCooldownUntil) return { ok: true };
+  const cooldownEnd = new Date(row.reminderCooldownUntil).getTime();
+  const now = Date.now();
+  if (now >= cooldownEnd) return { ok: true };
+  return { ok: false, retryAfterMs: cooldownEnd - now };
+}
+
+export function setReminderCooldown(ticketId: string, minutes: number): void {
+  const db = getDb();
+  const until = new Date(Date.now() + minutes * 60_000).toISOString();
+  db.prepare("UPDATE tickets SET reminderCooldownUntil = ? WHERE id = ?").run(until, ticketId);
+}
+
+export function setStaffReminderSent(ticketId: string): void {
+  const db = getDb();
+  const now = new Date().toISOString();
+  db.prepare("UPDATE tickets SET lastStaffReminderAt = ? WHERE id = ?").run(now, ticketId);
+}
+
+export interface StaleTicket {
+  id: string;
+  userId: string;
+  username: string;
+  type: string;
+  subject: string;
+  assignedToUsername: string | null;
+  lastMessageAt: string;
+  idleHours: number;
+}
+
+export function getStaleTickets(): StaleTicket[] {
+  const db = getDb();
+  const cutoff24h = new Date(Date.now() - 24 * 60 * 60_000).toISOString();
+
+  const rows = db.prepare(`
+    SELECT
+      t.id, t.userId, t.username, t.type, t.subject, t.assignedToUsername,
+      MAX(m.createdAt) as lastMessageAt,
+      CAST((julianday('now') - julianday(MAX(m.createdAt))) * 24 AS INTEGER) as idleHours
+    FROM tickets t
+    LEFT JOIN ticket_messages m ON m.ticketId = t.id AND m.isInternal = 0
+    WHERE t.status IN ('open', 'in-progress')
+      AND t.archivedAt IS NULL
+    GROUP BY t.id
+    HAVING lastMessageAt IS NOT NULL
+       AND lastMessageAt < ?
+       AND (t.lastStaffReminderAt IS NULL OR t.lastStaffReminderAt < ?)
+    ORDER BY lastMessageAt ASC
+  `).all(cutoff24h, cutoff24h) as StaleTicket[];
+
+  return rows;
+}
