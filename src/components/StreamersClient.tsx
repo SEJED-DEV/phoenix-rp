@@ -292,7 +292,7 @@ function StreamerRow({ streamer, live, index }: { streamer: Streamer; live?: Liv
       href={url}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 hover:bg-white/[0.03] relative"
+      className="group flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/[0.02] transition-all duration-300 hover:bg-white/[0.04] hover:shadow-[inset_0_0_20px_rgba(255,255,255,0.015)] relative"
       style={{
         animation: `fadeIn 0.4s ease ${index * 0.05}s both`,
       }}
@@ -305,7 +305,7 @@ function StreamerRow({ streamer, live, index }: { streamer: Streamer; live?: Liv
       {/* Avatar */}
       <div className="relative shrink-0">
         <div
-          className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center transition-all duration-300 group-hover:scale-110"
+          className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center"
           style={{
             background: streamer.avatarUrl ? "transparent" : `${color}12`,
             border: `2px solid ${isLive ? color : `${color}20`}`,

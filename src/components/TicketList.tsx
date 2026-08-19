@@ -240,7 +240,7 @@ export default function TicketList({
                 tabIndex={0}
                 onClick={() => router.push(`/tickets/${ticket.id}`)}
                 onKeyDown={(e) => { if (e.key === "Enter") router.push(`/tickets/${ticket.id}`); }}
-                className={`group flex items-center gap-4 px-4 py-3 rounded-xl transition-all duration-200 hover:bg-white/[0.03] cursor-pointer ${isNew ? "animate-[fadeIn_0.3s_ease]" : ""}`}
+                className={`group flex items-center gap-4 px-4 py-3 rounded-xl bg-white/[0.02] transition-all duration-200 hover:bg-white/[0.04] hover:shadow-[inset_0_0_20px_rgba(255,255,255,0.015)] cursor-pointer ${isNew ? "animate-[fadeIn_0.3s_ease]" : ""}`}
               >
                 {/* Type dot */}
                 <div className="shrink-0">
