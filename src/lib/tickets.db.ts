@@ -179,6 +179,10 @@ export function addTicketMessage(
   return db.prepare("SELECT * FROM ticket_messages WHERE id = ?").get(id) as TicketMessage;
 }
 
+export function logTicketActivity(ticketId: string, content: string): TicketMessage {
+  return addTicketMessage(ticketId, "system", "System", "", content, false);
+}
+
 export function getTicketMessages(ticketId: string): TicketMessage[] {
   const db = getDb();
   return db.prepare("SELECT * FROM ticket_messages WHERE ticketId = ? ORDER BY createdAt ASC").all(

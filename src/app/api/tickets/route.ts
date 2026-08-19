@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
-import { createTicket, getTicketsByUser, getAllTickets, getArchivedTickets, hasOpenTicketOfType, type TicketAttachment } from "@/lib/tickets.db";
+import { createTicket, getTicketsByUser, getAllTickets, getArchivedTickets, hasOpenTicketOfType, logTicketActivity, type TicketAttachment } from "@/lib/tickets.db";
 import { getTicketType, getAvailableTicketTypes, canViewTicketType, canAccessTicketArchive, TICKET_DELETE_POLICY } from "@/lib/tickets.config";
 import { sendTicketNotification } from "@/lib/tickets.webhook";
 import { getHighestRole } from "@/lib/discord";
@@ -103,6 +103,9 @@ export async function POST(req: NextRequest) {
     description,
     userRole: getHighestRole(session.roles) || undefined,
   });
+
+  const typeName = getTicketType(type)?.name || type;
+  logTicketActivity(ticket.id, `Ticket opened as **${typeName}** by @${session.username}`);
 
   let attachments: TicketAttachment[] = [];
   if (files.length > 0) {

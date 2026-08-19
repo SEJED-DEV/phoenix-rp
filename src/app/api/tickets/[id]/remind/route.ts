@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ensureSessionRoles } from "@/lib/auth";
-import { getTicketById } from "@/lib/tickets.db";
+import { getTicketById, logTicketActivity } from "@/lib/tickets.db";
 import { getTicketType, canViewTicketType } from "@/lib/tickets.config";
 import { openDm, sendMessage } from "@/lib/discord";
 import { getSiteUrl } from "@/lib/site-url";
@@ -52,6 +52,8 @@ export async function POST(
     await sendMessage(FALLBACK_CHANNEL, `⚠️ <@${ticket.userId}> DMs are closed — ${ticket.username} (ticket \`${ticket.id.slice(0, 8)}\`).\n${content}`);
     delivered = "channel";
   }
+
+  logTicketActivity(id, `Reminder sent by @${session.username} — delivered via ${delivered}`);
 
   return NextResponse.json({
     ok: true,

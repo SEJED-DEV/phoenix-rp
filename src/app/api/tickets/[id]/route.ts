@@ -12,11 +12,13 @@ import {
   getTicketAttachments,
   getInternalMessageIds,
   archiveTicket,
+  logTicketActivity,
   type Ticket,
   type TicketAttachment,
 } from "@/lib/tickets.db";
 import {
   getTicketType,
+  TICKET_TYPES,
   canViewTicketType,
   canDeleteTicket,
   canAccessTicketArchive,
@@ -140,6 +142,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid status" }, { status: 400 });
     }
     updated = updateTicketStatus(id, status as Ticket["status"])!;
+    const statusLabel = status === "open" ? "Open" : status === "in-progress" ? "In Progress" : "Closed";
+    logTicketActivity(id, `Status changed to **${statusLabel}** by @${session.username}`);
   }
 
   if (priority) {
@@ -147,6 +151,8 @@ export async function PATCH(
       return NextResponse.json({ error: "Invalid priority" }, { status: 400 });
     }
     updated = updateTicketPriority(id, priority as Ticket["priority"])!;
+    const priLabel = priority.charAt(0).toUpperCase() + priority.slice(1);
+    logTicketActivity(id, `Priority changed to **${priLabel}** by @${session.username}`);
   }
 
   if (type) {
@@ -154,14 +160,25 @@ export async function PATCH(
     if (!validTypes.includes(type)) {
       return NextResponse.json({ error: "Invalid ticket type" }, { status: 400 });
     }
+    const oldTypeName = TICKET_TYPES.find((t) => t.slug === ticket.type)?.name || ticket.type;
+    const newTypeName = TICKET_TYPES.find((t) => t.slug === type)?.name || type;
     updated = updateTicketType(id, type)!;
+    logTicketActivity(id, `Type changed from **${oldTypeName}** to **${newTypeName}** by @${session.username}`);
   }
 
   if (assignedTo !== undefined) {
+    const wasAssigned = !!ticket.assignedTo;
+    const isAssigning = !!assignedTo;
     updated = assignTicket(id, assignedTo || null, assignedToUsername || null)!;
+    if (isAssigning && !wasAssigned) {
+      logTicketActivity(id, `Assigned to **@${assignedToUsername}** by @${session.username}`);
+    } else if (!isAssigning && wasAssigned) {
+      logTicketActivity(id, `Unassigned by @${session.username}`);
+    }
     // Auto-set to in-progress when staff claims an open ticket
     if (assignedTo && updated.status === "open") {
       updated = updateTicketStatus(id, "in-progress")!;
+      logTicketActivity(id, `Status changed to **In Progress** (auto-assigned)`);
     }
   }
 

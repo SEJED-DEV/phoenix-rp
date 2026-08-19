@@ -826,8 +826,26 @@ export default function TicketDetailPage() {
                       </div>
                     )}
 
-                    <div
-                      className={`msg-enter group flex gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-white/[0.02] ${
+                    {/* System activity message */}
+                    {msg.userId === "system" ? (
+                      <div className="flex items-center justify-center gap-2 py-1.5 px-3 my-0.5">
+                        <div className="h-px flex-1 max-w-16 bg-white/[0.04]" />
+                        <p className="text-[11px] text-text-muted/40 whitespace-pre-wrap text-center leading-relaxed">
+                          {msg.content.split(/(\*\*.*?\*\*|@\w+)/g).map((part, pi) => {
+                            if (part.startsWith("**") && part.endsWith("**")) {
+                              return <strong key={pi} className="text-text-muted/60">{part.slice(2, -2)}</strong>;
+                            }
+                            if (part.startsWith("@")) {
+                              return <span key={pi} className="text-text-muted/50">{part}</span>;
+                            }
+                            return <span key={pi}>{part}</span>;
+                          })}
+                        </p>
+                        <div className="h-px flex-1 max-w-16 bg-white/[0.04]" />
+                      </div>
+                    ) : (
+                      <div
+                        className={`msg-enter group flex gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-white/[0.02] ${
                         msg.isInternal ? "bg-amber-500/[0.03] border border-amber-500/10 hover:bg-amber-500/[0.06]" : ""
                       }`}
                       style={{ animationDelay: `${Math.min(i * 20, 400)}ms` }}
@@ -877,6 +895,7 @@ export default function TicketDetailPage() {
                         })()}
                       </div>
                     </div>
+                    )}
                   </div>
                 );
               })}
