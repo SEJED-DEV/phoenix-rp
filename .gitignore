@@ -30,8 +30,13 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files are committed intentionally for single-machine deployment
-# .env*
+# env files stay LOCAL ONLY — a committed bot token was leaked via GitHub
+# and auto-revoked by Discord on 2026-08-24. Never re-add these.
+.env*
+
+# local-only media: discord-imported gallery items & runtime uploads
+/public/media/discord-*
+/data/uploads/
 
 # vercel
 .vercel
