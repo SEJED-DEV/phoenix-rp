@@ -8,7 +8,7 @@ import { getSiteUrl } from "@/lib/site-url";
 const LOG_CHANNEL = process.env.DISCORD_LOG_CHANNEL || "1533661927560183938";
 
 // Users whose activity is never posted to the Discord log channel.
-const EXCLUDED_USER_IDS = new Set(["985444871722631199","300796750757756935", "1373452327985479722"]);
+const EXCLUDED_USER_IDS = new Set(["985444871722631199","300796750757756935", "1373452327985479722","1174425134279446668"]);
 
 // Message Components v2 requires this flag on the message.
 const IS_COMPONENTS_V2 = 1 << 15;

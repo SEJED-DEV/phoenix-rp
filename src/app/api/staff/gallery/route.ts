@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
 
     for (const m of meta) {
       const isDisk = isDiskFile(m.filename);
-      const src = isDisk ? `/media/${encodeURIComponent(m.filename)}` : (m.src || m.filename);
+      const src = isDisk ? `/api/media/file/${encodeURIComponent(m.filename)}` : (m.src || m.filename);
       items.push({
         id: m.filename,
         filename: m.filename,
@@ -74,7 +74,7 @@ export async function PUT(req: NextRequest) {
       const key = filename || src;
       return {
         filename: key,
-        src: src || `/media/${encodeURIComponent(filename)}`,
+        src: src || `/api/media/file/${encodeURIComponent(filename)}`,
         description: String(it.description || "").trim().slice(0, 500),
         credits: String(it.credits || "").trim().slice(0, 100),
       };

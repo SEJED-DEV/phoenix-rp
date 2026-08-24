@@ -24,6 +24,7 @@ export default function GalleryEditor() {
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [dirty, setDirty] = useState(false);
   const [urlInput, setUrlInput] = useState("");
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => {
     fetchItems();
@@ -48,11 +49,44 @@ export default function GalleryEditor() {
     }
   }
 
-  function addItemFromUrl() {
+  async function addItemFromUrl() {
     const url = urlInput.trim();
-    if (!url) return;
+    if (!url || importing) return;
+
+    if (/discord\.com\/channels\//.test(url)) {
+      setImporting(true);
+      try {
+        const res = await fetch("/api/staff/gallery/import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ link: url }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setToast({ type: "error", text: data.error || "Discord import failed." });
+          return;
+        }
+        const imported: GalleryItem[] = (data.items || []).map(
+          (it: { filename: string; src: string; description: string; credits: string; isVideo: boolean }, i: number) => ({
+            id: `discord-${Date.now()}-${i}`,
+            ...it,
+          })
+        );
+        setItems((prev) => [...prev, ...imported]);
+        setDirty(true);
+        setUrlInput("");
+        const errNote = data.errors?.length ? ` (${data.errors.length} skipped)` : "";
+        setToast({ type: "success", text: `Imported ${imported.length} item(s) from Discord${errNote}. Review and save.` });
+      } catch {
+        setToast({ type: "error", text: "Discord import failed." });
+      } finally {
+        setImporting(false);
+      }
+      return;
+    }
+
     if (!url.startsWith("http://") && !url.startsWith("https://") && !url.startsWith("/")) {
-      setToast({ type: "error", text: "Please enter a valid URL (https://...) or local path (/\u2026)." });
+      setToast({ type: "error", text: "Please enter a valid URL (https://...), local path (/\u2026), or Discord message link." });
       return;
     }
     const id = `url-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -133,14 +167,14 @@ export default function GalleryEditor() {
       </div>
       <h1 className="font-display text-2xl tracking-wider text-white mb-1">Gallery Configuration</h1>
       <p className="text-text-muted text-xs mb-8">
-        Add images and videos via URL. Items display in random order on the gallery page.
+        Add images/videos via URL or paste a Discord message link to auto-import media, description, and credits. Items display in random order on the gallery page.
       </p>
 
       {/* URL Input */}
       <div className="flex items-center gap-3 mb-8">
         <input
           type="url"
-          placeholder="Paste image or video URL..."
+          placeholder="Paste image/video URL or Discord message link..."
           value={urlInput}
           onChange={(e) => setUrlInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addItemFromUrl(); } }}
@@ -148,14 +182,14 @@ export default function GalleryEditor() {
         />
         <button
           onClick={addItemFromUrl}
-          disabled={!urlInput.trim()}
+          disabled={!urlInput.trim() || importing}
           className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium transition-all text-white disabled:opacity-30"
           style={{ background: "rgba(16,185,129,0.15)", border: "1px solid rgba(16,185,129,0.3)" }}
         >
           <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
-          Add
+          {importing ? "Importing..." : "Add"}
         </button>
         <button
           onClick={handleSave}

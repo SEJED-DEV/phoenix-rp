@@ -59,38 +59,87 @@ export interface MemberInfo {
   roles: string[];
   joinedAt: string;
   username?: string;
+  nick?: string | null;
   avatar?: string;
 }
 
-async function fetchMember(userId: string): Promise<MemberInfo | null> {
+interface MemberFetchResult {
+  kind: "ok" | "not-found" | "error";
+  info?: MemberInfo;
+}
+
+// Per-member cache: positive entries live MEMBER_INFO_TTL_MS, "not found"
+// (user left the guild / never existed) lives MEMBER_NEG_TTL_MS. Transient
+// API failures are never cached as absence — they only arm a shared backoff
+// window so an outage can't turn every request into a failed API call.
+const MEMBER_INFO_TTL_MS = 300_000;
+const MEMBER_NEG_TTL_MS = 60_000;
+const MEMBER_CACHE_MAX_ENTRIES = 2_000;
+
+const memberInfoCache = new Map<string, { at: number; info: MemberInfo | null }>();
+const memberInfoInflight = new Map<string, Promise<MemberInfo | null>>();
+let memberInfoErrBackoffUntil = 0;
+
+async function fetchMemberOnce(userId: string): Promise<MemberFetchResult> {
   try {
     const url = `https://discord.com/api/v10/guilds/${GUILD_ID}/members/${userId}`;
-    console.log(`[discord] Fetching member info for user ${userId}`);
     const res = await fetch(url, {
       headers: { Authorization: `Bot ${BOT_TOKEN}` },
+      signal: AbortSignal.timeout(10_000),
     });
+    if (res.status === 404) return { kind: "not-found" };
     if (!res.ok) {
-      const body = await res.text();
-      console.error(`[discord] fetchMember failed: ${res.status} — ${body}`);
-      return null;
+      if (Date.now() >= memberInfoErrBackoffUntil) {
+        console.error(`[discord] fetchMember failed: HTTP ${res.status}`);
+        memberInfoErrBackoffUntil = Date.now() + RETRY_BACKOFF_MS;
+      }
+      return { kind: "error" };
     }
     const member = await res.json();
-    const data: MemberInfo = {
-      roles: member.roles || [],
-      joinedAt: member.joined_at || "",
-      username: member.user?.username || undefined,
-      avatar: member.user?.avatar || undefined,
+    return {
+      kind: "ok",
+      info: {
+        roles: member.roles || [],
+        joinedAt: member.joined_at || "",
+        username: member.user?.username || undefined,
+        nick: member.nick || null,
+        avatar: member.user?.avatar || undefined,
+      },
     };
-    console.log(`[discord] Member info for ${userId}:`, data);
-    return data;
   } catch (e) {
-    console.error("[discord] fetchMember exception:", e);
-    return null;
+    if (Date.now() >= memberInfoErrBackoffUntil) {
+      console.error("[discord] fetchMember exception:", e);
+      memberInfoErrBackoffUntil = Date.now() + RETRY_BACKOFF_MS;
+    }
+    return { kind: "error" };
   }
 }
 
 export async function getMemberInfo(userId: string): Promise<MemberInfo | null> {
-  return fetchMember(userId);
+  const now = Date.now();
+  const cached = memberInfoCache.get(userId);
+  if (cached && now - cached.at < (cached.info ? MEMBER_INFO_TTL_MS : MEMBER_NEG_TTL_MS)) {
+    return cached.info;
+  }
+  const inflight = memberInfoInflight.get(userId);
+  if (inflight) return inflight;
+
+  const task = (async () => {
+    try {
+      const result = await fetchMemberOnce(userId);
+      const info = result.kind === "ok" ? result.info ?? null : null;
+      if (result.kind !== "error") {
+        if (memberInfoCache.size >= MEMBER_CACHE_MAX_ENTRIES) memberInfoCache.clear();
+        memberInfoCache.set(userId, { at: Date.now(), info });
+      }
+      return info;
+    } finally {
+      memberInfoInflight.delete(userId);
+    }
+  })();
+
+  memberInfoInflight.set(userId, task);
+  return task;
 }
 
 export async function getUserRoles(userId: string): Promise<string[]> {
@@ -580,6 +629,74 @@ export async function getForumPosts(forumChannelId: string): Promise<ForumPost[]
   );
 
   return posts;
+}
+
+export interface ParsedDiscordMessageLink {
+  channelId: string;
+  messageId: string;
+}
+
+export function parseDiscordMessageLink(input: string): ParsedDiscordMessageLink | null {
+  const match = input
+    .trim()
+    .match(/^https:\/\/(?:ptb\.|canary\.)?discord\.com\/channels\/(?:\d+|@me)\/(\d{5,})\/(\d{5,})\/?$/);
+  if (!match) return null;
+  return { channelId: match[1], messageId: match[2] };
+}
+
+export interface GuildMessageMedia {
+  url: string;
+  filename: string;
+  contentType?: string;
+  size: number;
+}
+
+export interface GuildMessage {
+  id: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  attachments: GuildMessageMedia[];
+  embedImageUrls: string[];
+}
+
+interface RawEmbedImage {
+  url?: string;
+}
+
+interface RawEmbed {
+  image?: RawEmbedImage;
+}
+
+export async function getGuildMessage(channelId: string, messageId: string): Promise<GuildMessage | null> {
+  try {
+    const url = `https://discord.com/api/v10/channels/${channelId}/messages/${messageId}`;
+    const res = await fetch(url, { headers: { Authorization: `Bot ${BOT_TOKEN}` } });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[discord] getGuildMessage failed: ${res.status} — ${body}`);
+      return null;
+    }
+    const msg = await res.json();
+    return {
+      id: msg.id,
+      content: typeof msg.content === "string" ? msg.content : "",
+      authorId: msg.author?.id || "",
+      authorName: msg.author?.username || "Unknown",
+      attachments: (msg.attachments || []).map((a: { url: string; filename: string; content_type?: string; size?: number }) => ({
+        url: a.url,
+        filename: a.filename,
+        contentType: a.content_type,
+        size: a.size ?? 0,
+      })),
+      embedImageUrls: (msg.embeds || [])
+        .map((e: RawEmbed) => e.image?.url)
+        .filter((u: unknown): u is string => typeof u === "string"),
+    };
+  } catch (e) {
+    console.error("[discord] getGuildMessage exception:", e);
+    return null;
+  }
 }
 
 export async function searchMembers(query: string): Promise<{ userId: string; username: string; avatar: string; roles: string[] }[]> {

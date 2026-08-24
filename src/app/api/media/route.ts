@@ -18,7 +18,7 @@ export async function GET() {
     // DB items (URL-based or disk-based)
     for (const m of meta) {
       const isDisk = !m.src.startsWith("http") && EXTENSIONS.some((ext) => m.filename.toLowerCase().endsWith(ext));
-      const src = isDisk ? `/media/${encodeURIComponent(m.filename)}` : m.src;
+      const src = isDisk ? `/api/media/file/${encodeURIComponent(m.filename)}` : m.src;
       items.push({
         name: m.filename,
         isVideo: /\.(mp4|webm)$/i.test(src),
@@ -39,7 +39,7 @@ export async function GET() {
         items.push({
           name: f,
           isVideo: /\.(mp4|webm)$/i.test(f),
-          src: `/media/${encodeURIComponent(f)}`,
+          src: `/api/media/file/${encodeURIComponent(f)}`,
         });
       }
     }
